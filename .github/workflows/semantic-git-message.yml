@@ -2,8 +2,8 @@ on:
   workflow_call:
 
 jobs:
-  semantic-git-commit-messages:
-    name: Check for semantic commit messages
+  validate-semantic-commits:
+    name: Validate semantic commits
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
