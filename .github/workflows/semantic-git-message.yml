@@ -1,0 +1,16 @@
+on:
+  workflow_call:
+
+jobs:
+  semantic-git-commit-messages:
+    name: Check for semantic commit messages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate commit messages
+        uses: docker://aevea/commitsar:latest
+
