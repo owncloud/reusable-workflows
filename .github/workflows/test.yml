@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lint-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  APP_NAME: impersonate
+  PHP_VERSIONS: '["7.4"]'
+
+jobs:
+
+  semantic-git-messages:
+    name: Commits
+    uses: ./.github/workflows/semantic-git-message.yml
+
