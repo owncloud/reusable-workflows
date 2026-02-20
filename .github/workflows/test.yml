@@ -14,12 +14,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: lint-${{ github.ref }}
+  group: test-${{ github.ref }}
   cancel-in-progress: true
-
-env:
-  APP_NAME: impersonate
-  PHP_VERSIONS: '["7.4"]'
 
 jobs:
 
@@ -27,3 +23,10 @@ jobs:
     name: Commits
     uses: ./.github/workflows/semantic-git-message.yml
 
+  php-code-style:
+    name: PHP Code Style
+    uses: ./.github/workflows/php-codestyle.yml
+    with:
+      app-name: impersonate
+      app-repository: owncloud/impersonate
+      php-versions: '["7.4"]'
