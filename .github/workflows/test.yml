@@ -38,3 +38,11 @@ jobs:
       app-name: impersonate
       app-repository: owncloud/impersonate
       php-versions: '["7.4"]'
+
+  js-unit:
+    name: JS Unit
+    uses: ./.github/workflows/js-unit.yml
+    with:
+      app-name: customgroups
+      app-repository: owncloud/customgroups
+      php-version: '7.4'
