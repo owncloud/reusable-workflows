@@ -24,6 +24,11 @@ on:
         required: false
         type: boolean
         default: false
+      additional-app:
+        description: 'Additional app to enable for testing'
+        required: false
+        type: string
+        default: ''
 
 jobs:
   php-codestyle:
@@ -45,6 +50,13 @@ jobs:
         with:
           path: apps/${{ inputs.app-name }}
           repository: ${{ inputs.app-repository }}
+
+      - name: Checkout apps/${{ inputs.additional-app }}
+        if: ${{ inputs.additional-app != '' }}
+        uses: actions/checkout@v4
+        with:
+          path: apps/${{ inputs.additional-app }}
+          repository: owncloud/${{ inputs.additional-app }}
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
