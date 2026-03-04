@@ -31,6 +31,15 @@ jobs:
       app-repository: owncloud/impersonate
       php-versions: '["7.4"]'
 
+  php-code-style-no-phan:
+    name: PHP Code Style (--no-phan)
+    uses: ./.github/workflows/php-codestyle.yml
+    with:
+      app-name: impersonate
+      app-repository: owncloud/impersonate
+      php-versions: '["7.4"]'
+      disable-phan: true
+
   php-unit:
     name: PHP Unit
     uses: ./.github/workflows/php-unit.yml
