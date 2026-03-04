@@ -49,6 +49,16 @@ jobs:
       php-versions: '["7.4"]'
       additional-app: customgroups
 
+  php-code-style-core-ref:
+    name: PHP Code Style
+    uses: ./.github/workflows/php-codestyle.yml
+    with:
+      app-name: user_ldap
+      app-repository: owncloud/user_ldap
+      app-ref: 'feat/php8'
+      php-versions: '["8.3"]'
+      core-ref: 'feat/php8-again'
+
   php-unit:
     name: PHP Unit
     uses: ./.github/workflows/php-unit.yml
