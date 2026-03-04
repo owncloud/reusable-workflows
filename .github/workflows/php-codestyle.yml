@@ -14,6 +14,16 @@ on:
         required: false
         type: string
         default: ''
+      disable-phpstan:
+        description: 'Whether to disable PHPStan checks'
+        required: false
+        type: boolean
+        default: false
+      disable-phan:
+        description: 'Whether to disable Phan checks'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   php-codestyle:
@@ -62,11 +72,13 @@ jobs:
           make test-php-style
 
       - name: Run PHP Stan
+        if: ${{ !inputs.disable-phpstan }}
         run: |
           cd apps/${{ inputs.app-name }}
           make test-php-phpstan
 
       - name: Run PHP Phan
+        if: ${{ !inputs.disable-phan }}
         run: |
           cd apps/${{ inputs.app-name }}
           make test-php-phan
