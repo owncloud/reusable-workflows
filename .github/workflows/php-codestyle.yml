@@ -29,6 +29,16 @@ on:
         required: false
         type: string
         default: ''
+      core-ref:
+        description: 'Git ref to checkout for owncloud/core (optional, defaults to the default branch)'
+        required: false
+        type: string
+        default: ''
+      app-ref:
+        description: 'Git ref to checkout for owncloud/${ inputs.app-name } (optional, defaults to the default branch)'
+        required: false
+        type: string
+        default: ''
 
 jobs:
   php-codestyle:
@@ -44,12 +54,14 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: owncloud/core
+          ref: ${{ inputs.core-ref }}
 
       - name: Checkout apps/${{ inputs.app-name }}
         uses: actions/checkout@v4
         with:
           path: apps/${{ inputs.app-name }}
           repository: ${{ inputs.app-repository }}
+          ref: ${{ inputs.app-ref }}
 
       - name: Checkout apps/${{ inputs.additional-app }}
         if: ${{ inputs.additional-app != '' }}
