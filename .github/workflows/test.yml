@@ -57,6 +57,15 @@ jobs:
       app-repository: owncloud/impersonate
       php-versions: '["7.4"]'
 
+  php-integration:
+    name: PHP Integration
+    uses: ./.github/workflows/php-unit.yml
+    with:
+      app-name: notes
+      app-repository: owncloud/notes
+      php-versions: '["7.4"]'
+      do-integration-tests: true
+
   js-unit:
     name: JS Unit
     uses: ./.github/workflows/js-unit.yml
