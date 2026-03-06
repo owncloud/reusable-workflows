@@ -14,6 +14,11 @@ on:
         required: false
         type: string
         default: ''
+      do-integration-tests:
+        description: 'Whether to run PHP integration tests'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   php-unit:
@@ -126,4 +131,10 @@ jobs:
         run: |
           cd apps/${{ inputs.app-name }}
           make test-php-unit
+
+      - name: Run PHP Integration tests
+        if: ${{ inputs.do-integration-tests }}
+        run: |
+          cd apps/${{ inputs.app-name }}
+          make test-php-integration
 
