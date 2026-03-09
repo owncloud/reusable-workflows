@@ -41,19 +41,19 @@ jobs:
 
     steps:
       - name: Clone owncloud/core
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: owncloud/core
 
       - name: Checkout apps/${{ inputs.app-name }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           path: apps/${{ inputs.app-name }}
           repository: ${{ inputs.app-repository }}
 
       - name: Checkout apps/${{ inputs.additional-app }}
         if: ${{ inputs.additional-app != '' }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           path: apps/${{ inputs.additional-app }}
           repository: owncloud/${{ inputs.additional-app }}
