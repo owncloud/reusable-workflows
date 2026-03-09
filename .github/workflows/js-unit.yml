@@ -39,10 +39,11 @@ jobs:
           extensions: curl, gd, json, xml, zip
           ini-values: "memory_limit=1024M"
 
-      - name: Install Composer dependencies
+      - name: Install Dependencies
         run: |
-          make install-composer-deps
-          make install-nodejs-deps
+          make
+          cd apps/${{ inputs.app-name }}
+          make vendor || true
 
       - name: Install Server
         env:

@@ -30,11 +30,11 @@ jobs:
         php: ${{ fromJSON(inputs.php-versions) }}
         database: [sqlite]
         include:
-          - php: "7.4"
+          - php: ${{ fromJSON(inputs.php-versions)[0] }}
             database: "mysql:8.0"
-          - php: "7.4"
+          - php: ${{ fromJSON(inputs.php-versions)[0] }}
             database: "mariadb:10.6"
-          - php: "7.4"
+          - php: ${{ fromJSON(inputs.php-versions)[0] }}
             database: "postgres:10.21"
 
     services:
@@ -81,10 +81,11 @@ jobs:
           extensions: curl, gd, json, xml, zip
           ini-values: "memory_limit=1024M"
 
-      - name: Install Composer dependencies
+      - name: Install Dependencies
         run: |
-          make install-composer-deps
-          make vendor-bin-deps
+          make
+          cd apps/${{ inputs.app-name }}
+          make vendor || true
 
       - name: Install Server
         env:

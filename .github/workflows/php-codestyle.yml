@@ -65,14 +65,36 @@ jobs:
           extensions: curl, gd, json, xml, zip
           ini-values: "memory_limit=1024M"
 
-      - name: Install Composer dependencies
+      - name: Install Dependencies
         run: |
-          make install-composer-deps
-          make vendor-bin-deps
+          make
+          cd apps/${{ inputs.app-name }}
+          make vendor || true
 
       - name: Install Server
+        env:
+          DATA_DIRECTORY: ${{ github.workspace }}/data
+          DB_TYPE: "sqlite"
+          DB_NAME: owncloud
+          ADMIN_LOGIN: admin
+          ADMIN_PASSWORD: admin
+
         run: |
-          DATA_DIRECTORY=$(pwd)/data bash tests/drone/install-server.sh
+          install_cmd="maintenance:install -vvv \
+            --database=${DB_TYPE} \
+            --database-name=${DB_NAME} \
+            --admin-user=${ADMIN_LOGIN} \
+            --admin-pass=${ADMIN_PASSWORD} \
+            --data-dir=${DATA_DIRECTORY} "
+          
+          php occ ${install_cmd}
+          echo "enabling apps"
+          php occ app:enable files_sharing
+          php occ app:enable files_trashbin
+          php occ app:enable files_versions
+          php occ app:enable provisioning_api
+          php occ app:enable federation
+          php occ app:enable federatedfilesharing
 
       - name: Setup App
         run: |
