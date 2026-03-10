@@ -62,7 +62,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: curl, gd, json, xml, zip
+          extensions: curl, gd, json, xml, zip, smbclient
           ini-values: "memory_limit=1024M"
 
       - name: Install Dependencies
