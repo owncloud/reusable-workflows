@@ -62,8 +62,11 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: curl, gd, json, xml, zip, smbclient
+          extensions: apcu, ctype, curl, exif, fileinfo, gd, iconv, imagick, intl, json, mbstring, memcached, pdo, posix, simplexml, xml, zip, smbclient, ldap, krb5
           ini-values: "memory_limit=1024M"
+        env:
+          fail-fast: true
+          KRB5_LINUX_LIBS: libkrb5-dev
 
       - name: Install Dependencies
         run: |
