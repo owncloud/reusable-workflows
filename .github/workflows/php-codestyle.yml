@@ -29,6 +29,11 @@ on:
         required: false
         type: string
         default: ''
+      additional-packages:
+        description: Additional Linux packages to be installed - space separated
+        required: false
+        type: string
+        default: ''
 
 jobs:
   php-codestyle:
@@ -57,6 +62,11 @@ jobs:
         with:
           path: apps/${{ inputs.additional-app }}
           repository: owncloud/${{ inputs.additional-app }}
+
+      - name: Install Linux packages
+        if: ${{ inputs.additional-packages }}
+        run: |
+          sudo apt-get install ${{ inputs.additional-packages }}
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
