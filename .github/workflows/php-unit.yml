@@ -19,6 +19,11 @@ on:
         required: false
         type: boolean
         default: false
+      additional-packages:
+        description: Additional Linux packages to be installed - space separated
+        required: false
+        type: string
+        default: ''
 
 jobs:
   php-unit:
@@ -73,6 +78,11 @@ jobs:
         with:
           path: apps/${{ inputs.app-name }}
           repository: ${{ inputs.app-repository }}
+
+      - name: Install Linux packages
+        if: ${{ inputs.additional-packages }}
+        run: |
+          sudo apt-get install ${{ inputs.additional-packages }}
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
