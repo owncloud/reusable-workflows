@@ -169,3 +169,8 @@ jobs:
           cd apps/${{ inputs.app-name }}
           make test-php-integration
 
+      - name: Tail log
+        if: always()
+        run: |
+          ls -la data
+          cat data/owncloud.log
