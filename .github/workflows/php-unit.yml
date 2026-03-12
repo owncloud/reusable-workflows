@@ -19,6 +19,11 @@ on:
         required: false
         type: boolean
         default: false
+      additional-app:
+        description: 'Additional app to enable for testing'
+        required: false
+        type: string
+        default: ''
       additional-packages:
         description: Additional Linux packages to be installed - space separated
         required: false
@@ -79,6 +84,13 @@ jobs:
           path: apps/${{ inputs.app-name }}
           repository: ${{ inputs.app-repository }}
 
+      - name: Checkout apps/${{ inputs.additional-app }}
+        if: ${{ inputs.additional-app != '' }}
+        uses: actions/checkout@v6
+        with:
+          path: apps/${{ inputs.additional-app }}
+          repository: owncloud/${{ inputs.additional-app }}
+
       - name: Install Linux packages
         if: ${{ inputs.additional-packages }}
         run: |
@@ -94,11 +106,9 @@ jobs:
           fail-fast: true
           KRB5_LINUX_LIBS: libkrb5-dev
 
-      - name: Install Dependencies
+      - name: Install Core Dependencies
         run: |
           make
-          cd apps/${{ inputs.app-name }}
-          make vendor || true
 
       - name: Install Server
         env:
@@ -137,9 +147,16 @@ jobs:
           php occ app:enable federation
           php occ app:enable federatedfilesharing
 
-      - name: Setup App
+      - name: Setup apps/${{ inputs.app-name }}
         run: |
+          ( cd apps/${{ inputs.app-name }} && make vendor || true)
           php occ a:e ${{ inputs.app-name }}
+
+      - name: Setup apps/${{ inputs.additional-app }}
+        if: ${{ inputs.additional-app != '' }}
+        run: |
+          ( cd apps/${{ inputs.additional-app }} && make vendor || true)
+          php occ a:e ${{ inputs.additional-app }}
 
       - name: Run PHPUnit
         run: |
