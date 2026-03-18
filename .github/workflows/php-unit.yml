@@ -24,6 +24,11 @@ on:
         required: false
         type: string
         default: ''
+      additional-app-github-token:
+        description: 'GitHub PAT to access the additional app repo - required if private'
+        required: false
+        type: string
+        default: ''
       additional-packages:
         description: Additional Linux packages to be installed - space separated
         required: false
@@ -90,6 +95,7 @@ jobs:
         with:
           path: apps/${{ inputs.additional-app }}
           repository: owncloud/${{ inputs.additional-app }}
+          token: ${{ inputs.additional-app-github-token || github.token }}
 
       - name: Install Linux packages
         if: ${{ inputs.additional-packages }}
