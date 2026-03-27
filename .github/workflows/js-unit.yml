@@ -27,12 +27,12 @@ jobs:
 
     steps:
       - name: Clone owncloud/core
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           repository: owncloud/core
 
       - name: Checkout apps/${{ inputs.app-name }}
-        uses: actions/checkout@v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           path: apps/${{ inputs.app-name }}
           repository: ${{ inputs.app-repository }}
@@ -43,7 +43,7 @@ jobs:
           sudo apt-get install ${{ inputs.additional-packages }}
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@accd6127cb78bee3e8082180cb391013d204ef9f # v2.37.0
         with:
           php-version: ${{ inputs.php-version }}
           extensions: apcu, ctype, curl, exif, fileinfo, gd, iconv, imagick, intl, json, mbstring, memcached, pdo, posix, simplexml, xml, zip, smbclient, ldap, krb5
