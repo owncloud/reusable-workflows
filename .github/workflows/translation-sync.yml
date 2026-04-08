@@ -1,0 +1,147 @@
+on:
+  workflow_call:
+    inputs:
+      mode:
+        description: 'Translation mode: old, make, or native'
+        required: true
+        type: string
+      branch:
+        description: 'Branch to commit and push translations to'
+        required: false
+        type: string
+        default: master
+      sub_path:
+        description: 'Path within the repo where translation files live. Defaults to l10n for old mode, . for make/native.'
+        required: false
+        type: string
+        default: ''
+      package_manager:
+        description: 'Package manager for make mode: npm or pnpm'
+        required: false
+        type: string
+        default: npm
+    secrets:
+      TX_TOKEN:
+        required: true
+
+jobs:
+  sync:
+    name: Translation Sync
+    runs-on: ubuntu-latest
+    container:
+      image: owncloudci/transifex:latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ inputs.branch }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Resolve sub_path
+        id: config
+        run: |
+          if [ -n '${{ inputs.sub_path }}' ]; then
+            echo "sub_path=${{ inputs.sub_path }}" >> $GITHUB_OUTPUT
+          elif [ '${{ inputs.mode }}' = 'old' ]; then
+            echo "sub_path=l10n" >> $GITHUB_OUTPUT
+          else
+            echo "sub_path=." >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create translation directory
+        if: inputs.mode == 'old'
+        run: mkdir -p '${{ steps.config.outputs.sub_path }}'
+
+      - name: Translation reader (make)
+        if: inputs.mode == 'make'
+        env:
+          NO_INSTALL: "true"
+        run: |
+          cd '${{ steps.config.outputs.sub_path }}'
+          if [ '${{ inputs.package_manager }}' = 'pnpm' ]; then
+            npm install --silent --global --force "$(jq -r '.packageManager' < package.json)"
+            pnpm config set store-dir ./.pnpm-store
+            pnpm install
+          fi
+          make l10n-read
+
+      - name: Translation reader (old)
+        if: inputs.mode == 'old'
+        run: |
+          cd '${{ steps.config.outputs.sub_path }}'
+          l10n '${{ github.event.repository.name }}' read
+
+      - name: Translation push (make)
+        if: inputs.mode == 'make' && github.ref == format('refs/heads/{0}', inputs.branch)
+        env:
+          TX_TOKEN: ${{ secrets.TX_TOKEN }}
+        run: |
+          cd '${{ steps.config.outputs.sub_path }}'
+          make l10n-push
+
+      - name: Translation push (old)
+        if: inputs.mode == 'old' && github.ref == format('refs/heads/{0}', inputs.branch)
+        env:
+          TX_TOKEN: ${{ secrets.TX_TOKEN }}
+        run: |
+          cd '${{ steps.config.outputs.sub_path }}'
+          tx push -s --skip
+
+      - name: Translation pull (make)
+        if: inputs.mode == 'make'
+        env:
+          TX_TOKEN: ${{ secrets.TX_TOKEN }}
+        run: |
+          cd '${{ steps.config.outputs.sub_path }}'
+          make l10n-pull
+
+      - name: Translation pull (old/native)
+        if: inputs.mode != 'make'
+        env:
+          TX_TOKEN: ${{ secrets.TX_TOKEN }}
+        run: |
+          cd '${{ steps.config.outputs.sub_path }}'
+          tx pull -a --skip --minimum-perc=75 -f
+
+      - name: Translation writer (make)
+        if: inputs.mode == 'make'
+        run: |
+          cd '${{ steps.config.outputs.sub_path }}'
+          make l10n-write
+
+      - name: Translation writer (old)
+        if: inputs.mode == 'old'
+        run: |
+          cd '${{ steps.config.outputs.sub_path }}'
+          l10n '${{ github.event.repository.name }}' write
+
+      - name: Translation cleanup (make)
+        if: inputs.mode == 'make'
+        run: |
+          cd '${{ steps.config.outputs.sub_path }}'
+          make l10n-clean
+
+      - name: Translation cleanup (old)
+        if: inputs.mode == 'old'
+        run: |
+          cd '${{ steps.config.outputs.sub_path }}'
+          find . -name "*.po" -type f -delete
+          find . -name "*.pot" -type f -delete
+          find . -name "or_IN.*" -type f -print0 | xargs -r -0 git rm -f
+          find . -name "uz.*" -type f -print0 | xargs -r -0 git rm -f
+          find . -name "yo.*" -type f -print0 | xargs -r -0 git rm -f
+          find . -name "ne.*" -type f -print0 | xargs -r -0 git rm -f
+
+      - name: Commit and push translations
+        if: github.ref == format('refs/heads/{0}', inputs.branch)
+        uses: GuillaumeFalourd/git-commit-push@205c043bca2f932f7a48a28a8d619ba30eb84baf
+        with:
+          target_branch: ${{ inputs.branch }}
+          commit_message: "[tx] updated from transifex"
+          name: ownClouders
+          email: devops@owncloud.com
+          files: .
+          empty: 0
+          access_token: ${{ github.token }}
