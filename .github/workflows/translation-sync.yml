@@ -33,7 +33,7 @@ jobs:
     name: Translation Sync
     runs-on: ubuntu-latest
     container:
-      image: owncloudci/transifex:latest
+      image: owncloudci/transifex@sha256:b34396c63ce246a34ceb441b8c39067f7f46090b6de5f51dbf656e9be69d7185
 
     steps:
       - name: Checkout
