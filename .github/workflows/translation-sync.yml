@@ -32,9 +32,6 @@ jobs:
   sync:
     name: Translation Sync
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
     container:
       image: owncloudci/transifex:latest
 
