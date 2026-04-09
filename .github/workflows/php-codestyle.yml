@@ -39,6 +39,11 @@ on:
         required: false
         type: string
         default: ''
+      special-app-setup-command:
+        description: 'Command that needs to be executed after the app is checked out and PHP is available'
+        required: false
+        type: string
+        default: ''
 
 jobs:
   php-codestyle:
@@ -87,6 +92,12 @@ jobs:
       - name: Install Core Dependencies
         run: |
           make
+
+      - name: Special app setup/${{ inputs.app-name }}
+        if: ${{ inputs.special-app-setup-command != '' }}
+        run: |
+          cd apps/${{ inputs.app-name }}
+          ${{ inputs.special-app-setup-command }}
 
       - name: Install Server
         env:
