@@ -5,11 +5,6 @@ on:
         description: 'Name of the app'
         required: true
         type: string
-      artifact-path:
-        description: 'Path to the build artifacts to upload'
-        required: false
-        type: string
-        default: 'build/artifacts'
 
 jobs:
   build:
@@ -27,4 +22,4 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: ${{ inputs.app-name }}
-          path: ${{ inputs.artifact-path }}
+          path: build/**/*.tar.bz2
