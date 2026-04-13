@@ -1,15 +1,13 @@
 on:
   workflow_call:
-    inputs:
-      app-name:
-        description: 'Name of the app'
-        required: true
-        type: string
+
+permissions: {}
 
 jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+    permissions: {}
 
     steps:
       - name: Checkout code
