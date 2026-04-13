@@ -1,5 +1,16 @@
 on:
   workflow_call:
+    inputs:
+      app-name:
+        description: 'Name of the app (used for the artifact name, defaults to the repository name)'
+        required: false
+        type: string
+        default: ''
+      app-repository:
+        description: 'Repository of the app (optional, defaults to the current repository)'
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -14,6 +25,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: ${{ inputs.app-repository }}
 
       - name: Build
         run: make dist
@@ -21,5 +34,5 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: ${{ inputs.app-name }}
-          path: build/**/*.tar.bz2
+          name: ${{ inputs.app-name || github.event.repository.name }}
+          path: build/**/*.tar.gz

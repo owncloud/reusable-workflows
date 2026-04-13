@@ -74,3 +74,10 @@ jobs:
       app-repository: owncloud/customgroups
       php-version: '8.3'
       additional-packages: exiftool bison
+
+  build-dist:
+    name: Build dist
+    uses: ./.github/workflows/build.yml
+    with:
+      app-name: impersonate
+      app-repository: owncloud/impersonate
