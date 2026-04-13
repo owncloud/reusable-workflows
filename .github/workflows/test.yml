@@ -78,6 +78,3 @@ jobs:
   build-dist:
     name: Build dist
     uses: ./.github/workflows/build.yml
-    with:
-      app-name: impersonate
-      app-repository: owncloud/impersonate
