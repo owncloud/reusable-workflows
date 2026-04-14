@@ -20,6 +20,16 @@ on:
         required: false
         type: string
         default: npm
+      reviewers:
+        description: 'Comma-separated list of GitHub usernames to request a review from'
+        required: false
+        type: string
+        default: ''
+      team_reviewers:
+        description: 'Comma-separated list of GitHub team slugs to request a review from'
+        required: false
+        type: string
+        default: ''
     secrets:
       TX_TOKEN:
         required: true
@@ -145,3 +155,5 @@ jobs:
           body: "Automated translation update from Transifex. This pull request is updated on each sync run — merging it will close it and a fresh one will be opened on the next change."
           delete-branch: true
           sign-commits: true
+          reviewers: ${{ inputs.reviewers }}
+          team-reviewers: ${{ inputs.team_reviewers }}
