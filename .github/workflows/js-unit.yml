@@ -9,6 +9,11 @@ on:
         description: PHP version the server should be setup with
         required: true
         type: string
+      core-ref:
+        description: git reference to checkout for core
+        required: false
+        type: string
+        default: ''
       app-repository:
         description: 'Repository of the app (optional, defaults to the current repository)'
         required: false
@@ -27,17 +32,10 @@ jobs:
 
     steps:
       - name: Clone owncloud/core
-        if: ${{ inputs.php-version != '7.4' }}
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           repository: owncloud/core
-
-      - name: Clone owncloud/core10
-        if: ${{ inputs.php-version == '7.4' }}
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          repository: owncloud/core
-          ref: v10.16.1
+          ref: ${{ inputs.core-ref }}
 
       - name: Checkout apps/${{ inputs.app-name }}
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
