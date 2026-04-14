@@ -51,9 +51,17 @@ jobs:
 
     steps:
       - name: Clone owncloud/core
+        if: ${{ matrix.php != '7.4' }}
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           repository: owncloud/core
+
+      - name: Clone owncloud/core10
+        if: ${{ matrix.php == '7.4' }}
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: owncloud/core
+          ref: v10.16.1
 
       - name: Checkout apps/${{ inputs.app-name }}
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
