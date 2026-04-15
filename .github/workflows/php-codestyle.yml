@@ -9,6 +9,11 @@ on:
         description: JSON array of PHP versions
         required: true
         type: string
+      core-ref:
+        description: 'git reference to checkout for core'
+        required: false
+        type: string
+        default: ''
       core-ref-php74:
         description: 'git reference to checkout for core if PHP 7.4 is used'
         required: false
@@ -56,17 +61,10 @@ jobs:
 
     steps:
       - name: Clone owncloud/core
-        if: ${{ matrix.php != '7.4' }}
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           repository: owncloud/core
-
-      - name: Clone owncloud/core10
-        if: ${{ matrix.php == '7.4' }}
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          repository: owncloud/core
-          ref: ${{ inputs.core-ref-php74 }}
+          ref: ${{ case(matrix.php == '7.4', inputs.core-ref-php74, inputs.core-ref) }}
 
       - name: Checkout apps/${{ inputs.app-name }}
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
