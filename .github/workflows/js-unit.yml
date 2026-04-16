@@ -59,9 +59,11 @@ jobs:
           KRB5_LINUX_LIBS: libkrb5-dev
 
       - name: Install Dependencies
+        env:
+          APP_NAME: ${{ inputs.app-name }}
         run: |
           make
-          cd apps/${{ inputs.app-name }}
+          cd "apps/${APP_NAME}"
           make vendor || true
 
       - name: Install Server
@@ -90,11 +92,15 @@ jobs:
           php occ app:enable federatedfilesharing
 
       - name: Setup App
+        env:
+          APP_NAME: ${{ inputs.app-name }}
         run: |
-          php occ a:e ${{ inputs.app-name }}
+          php occ a:e "${APP_NAME}"
 
       - name: Run jsunit
+        env:
+          APP_NAME: ${{ inputs.app-name }}
         run: |
-          cd apps/${{ inputs.app-name }}
+          cd "apps/${APP_NAME}"
           make test-js
 
