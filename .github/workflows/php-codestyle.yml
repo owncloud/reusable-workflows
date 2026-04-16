@@ -10,12 +10,12 @@ on:
         required: true
         type: string
       core-ref:
-        description: 'git reference to checkout for core'
+        description: 'Tag name to checkout for owncloud/core (e.g. v10.14.0). Branches and PR refs are not permitted.'
         required: false
         type: string
         default: ''
       core-ref-php74:
-        description: 'git reference to checkout for core if PHP 7.4 is used'
+        description: 'Tag name to checkout for owncloud/core when PHP 7.4 is used (e.g. v10.11.0). Branches and PR refs are not permitted.'
         required: false
         type: string
         default: ''
@@ -65,6 +65,30 @@ jobs:
         php: ${{ fromJSON(inputs.php-versions) }}
 
     steps:
+      - name: Validate core-ref inputs are existing tags
+        if: ${{ inputs.core-ref != '' || inputs.core-ref-php74 != '' }}
+        env:
+          CORE_REF: ${{ inputs.core-ref }}
+          CORE_REF_PHP74: ${{ inputs.core-ref-php74 }}
+        run: |
+          validate_tag() {
+            local ref="$1" input_name="$2"
+            [ -z "$ref" ] && return 0
+            local tag="${ref#refs/tags/}"
+            if printf '%s' "$tag" | grep -q '/'; then
+              echo "Error: $input_name must be a tag name, not a branch or PR ref. Got: '$ref'"
+              echo "Example valid value: v10.14.0"
+              exit 1
+            fi
+            if ! git ls-remote --tags --exit-code https://github.com/owncloud/core.git "refs/tags/${tag}" >/dev/null 2>&1; then
+              echo "Error: $input_name '$ref' is not an existing tag in owncloud/core"
+              echo "Example valid value: v10.14.0"
+              exit 1
+            fi
+          }
+          validate_tag "$CORE_REF" "core-ref"
+          validate_tag "$CORE_REF_PHP74" "core-ref-php74"
+
       - name: Validate app-repository
         if: ${{ inputs.app-repository != '' }}
         env:

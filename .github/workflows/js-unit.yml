@@ -10,7 +10,7 @@ on:
         required: true
         type: string
       core-ref:
-        description: git reference to checkout for core
+        description: Tag name to checkout for owncloud/core (e.g. v10.14.0). Branches and PR refs are not permitted.
         required: false
         type: string
         default: ''
@@ -36,6 +36,23 @@ jobs:
       contents: read
 
     steps:
+      - name: Validate core-ref is an existing tag
+        if: ${{ inputs.core-ref != '' }}
+        env:
+          CORE_REF: ${{ inputs.core-ref }}
+        run: |
+          tag="${CORE_REF#refs/tags/}"
+          if printf '%s' "$tag" | grep -q '/'; then
+            echo "Error: core-ref must be a tag name, not a branch or PR ref. Got: '${CORE_REF}'"
+            echo "Example valid value: v10.14.0"
+            exit 1
+          fi
+          if ! git ls-remote --tags --exit-code https://github.com/owncloud/core.git "refs/tags/${tag}" >/dev/null 2>&1; then
+            echo "Error: core-ref '${CORE_REF}' is not an existing tag in owncloud/core"
+            echo "Example valid value: v10.14.0"
+            exit 1
+          fi
+
       - name: Validate app-repository
         if: ${{ inputs.app-repository != '' }}
         env:
