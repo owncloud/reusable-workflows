@@ -37,7 +37,7 @@ jobs:
           repository: owncloud/core
           ref: ${{ inputs.core-ref }}
 
-      - name: Checkout apps/${{ inputs.app-name }}
+      - name: Checkout app
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           path: apps/${{ inputs.app-name }}
