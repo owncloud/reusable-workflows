@@ -78,3 +78,8 @@ jobs:
   build-dist:
     name: Build dist
     uses: ./.github/workflows/build.yml
+
+  calens:
+    name: Changelog
+    uses: ./.github/workflows/calens.yml
+    secrets: inherit
