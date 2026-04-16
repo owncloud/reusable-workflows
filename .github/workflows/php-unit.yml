@@ -88,6 +88,16 @@ jobs:
           - 5432:5432
 
     steps:
+      - name: Validate app-repository
+        if: ${{ inputs.app-repository != '' }}
+        env:
+          APP_REPO: ${{ inputs.app-repository }}
+        run: |
+          if ! echo "$APP_REPO" | grep -qE '^owncloud/[a-zA-Z0-9._-]+$'; then
+            echo "Error: app-repository must be within the owncloud/ namespace, got: $APP_REPO"
+            exit 1
+          fi
+
       - name: Clone owncloud/core
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
