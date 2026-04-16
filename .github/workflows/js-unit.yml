@@ -31,6 +31,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Validate core-ref
+        if: ${{ inputs.core-ref != '' }}
+        env:
+          CORE_REF: ${{ inputs.core-ref }}
+        run: |
+          if ! echo "$CORE_REF" | grep -qE '^[a-zA-Z0-9._/=-]+$'; then
+            echo "Error: core-ref contains invalid characters: $CORE_REF"
+            exit 1
+          fi
+
       - name: Clone owncloud/core
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:

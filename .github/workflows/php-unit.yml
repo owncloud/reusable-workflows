@@ -88,6 +88,19 @@ jobs:
           - 5432:5432
 
     steps:
+      - name: Validate core-ref
+        if: ${{ inputs.core-ref != '' || inputs.core-ref-php74 != '' }}
+        env:
+          CORE_REF: ${{ inputs.core-ref }}
+          CORE_REF_PHP74: ${{ inputs.core-ref-php74 }}
+        run: |
+          for ref in "$CORE_REF" "$CORE_REF_PHP74"; do
+            if [ -n "$ref" ] && ! echo "$ref" | grep -qE '^[a-zA-Z0-9._/=-]+$'; then
+              echo "Error: core-ref contains invalid characters: $ref"
+              exit 1
+            fi
+          done
+
       - name: Clone owncloud/core
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
