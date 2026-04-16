@@ -38,10 +38,15 @@ on:
       TRANSLATION_APP_PRIVATE_KEY:
         required: true
 
+permissions:
+  contents: read
+
 jobs:
   sync:
     name: Translation Sync
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     container:
       image: owncloudci/transifex@sha256:b34396c63ce246a34ceb441b8c39067f7f46090b6de5f51dbf656e9be69d7185
 

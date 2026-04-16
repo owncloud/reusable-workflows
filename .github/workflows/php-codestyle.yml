@@ -50,10 +50,15 @@ on:
         type: string
         default: ''
 
+permissions:
+  contents: read
+
 jobs:
   php-codestyle:
     name: PHP Code Style
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     strategy:
       fail-fast: true
       matrix:
