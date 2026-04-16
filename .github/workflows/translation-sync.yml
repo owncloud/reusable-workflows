@@ -55,15 +55,19 @@ jobs:
 
       - name: Create translation directory
         if: inputs.mode == 'old'
-        run: mkdir -p '${{ inputs.sub_path }}'
+        env:
+          SUB_PATH: ${{ inputs.sub_path }}
+        run: mkdir -p "$SUB_PATH"
 
       - name: Translation reader (make)
         if: inputs.mode == 'make'
         env:
           NO_INSTALL: "true"
+          SUB_PATH: ${{ inputs.sub_path }}
+          PACKAGE_MANAGER: ${{ inputs.package_manager }}
         run: |
-          cd '${{ inputs.sub_path }}'
-          if [ '${{ inputs.package_manager }}' = 'pnpm' ]; then
+          cd "$SUB_PATH"
+          if [ "$PACKAGE_MANAGER" = 'pnpm' ]; then
             npm install --silent --global --force "$(jq -r '.packageManager' < package.json)"
             pnpm config set store-dir ./.pnpm-store
             pnpm install
@@ -72,64 +76,80 @@ jobs:
 
       - name: Translation reader (old)
         if: inputs.mode == 'old'
+        env:
+          SUB_PATH: ${{ inputs.sub_path }}
+          REPO_NAME: ${{ github.event.repository.name }}
         run: |
-          cd '${{ inputs.sub_path }}'
-          l10n '${{ github.event.repository.name }}' read
+          cd "$SUB_PATH"
+          l10n "$REPO_NAME" read
 
       - name: Translation push (make)
         if: inputs.mode == 'make' && github.ref == format('refs/heads/{0}', inputs.branch)
         env:
           TX_TOKEN: ${{ secrets.TX_TOKEN }}
+          SUB_PATH: ${{ inputs.sub_path }}
         run: |
-          cd '${{ inputs.sub_path }}'
+          cd "$SUB_PATH"
           make l10n-push
 
       - name: Translation push (old)
         if: inputs.mode == 'old' && github.ref == format('refs/heads/{0}', inputs.branch)
         env:
           TX_TOKEN: ${{ secrets.TX_TOKEN }}
+          SUB_PATH: ${{ inputs.sub_path }}
         run: |
-          cd '${{ inputs.sub_path }}'
+          cd "$SUB_PATH"
           tx push -s --skip
 
       - name: Translation pull (make)
         if: inputs.mode == 'make'
         env:
           TX_TOKEN: ${{ secrets.TX_TOKEN }}
+          SUB_PATH: ${{ inputs.sub_path }}
         run: |
-          cd '${{ inputs.sub_path }}'
+          cd "$SUB_PATH"
           make l10n-pull
 
       - name: Translation pull (old/native)
         if: inputs.mode != 'make'
         env:
           TX_TOKEN: ${{ secrets.TX_TOKEN }}
+          SUB_PATH: ${{ inputs.sub_path }}
         run: |
-          cd '${{ inputs.sub_path }}'
+          cd "$SUB_PATH"
           tx pull -a --skip --minimum-perc=75 -f
 
       - name: Translation writer (make)
         if: inputs.mode == 'make'
+        env:
+          SUB_PATH: ${{ inputs.sub_path }}
         run: |
-          cd '${{ inputs.sub_path }}'
+          cd "$SUB_PATH"
           make l10n-write
 
       - name: Translation writer (old)
         if: inputs.mode == 'old'
+        env:
+          SUB_PATH: ${{ inputs.sub_path }}
+          REPO_NAME: ${{ github.event.repository.name }}
         run: |
-          cd '${{ inputs.sub_path }}'
-          l10n '${{ github.event.repository.name }}' write
+          cd "$SUB_PATH"
+          l10n "$REPO_NAME" write
 
       - name: Translation cleanup (make)
         if: inputs.mode == 'make'
+        env:
+          SUB_PATH: ${{ inputs.sub_path }}
         run: |
-          cd '${{ inputs.sub_path }}'
+          cd "$SUB_PATH"
           make l10n-clean
 
       - name: Translation cleanup (old)
         if: inputs.mode == 'old'
+        env:
+          SUB_PATH: ${{ inputs.sub_path }}
         run: |
-          cd '${{ inputs.sub_path }}'
+          cd "$SUB_PATH"
           find . -name "*.po" -type f -delete
           find . -name "*.pot" -type f -delete
           find . -name "or_IN.*" -type f -print0 | xargs -r -0 git rm -f
