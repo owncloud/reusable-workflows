@@ -136,11 +136,13 @@ jobs:
           php occ app:enable federation
           php occ app:enable federatedfilesharing
 
-      - name: Setup apps/${{ inputs.additional-app }}
+      - name: Setup additional app
         if: ${{ inputs.additional-app != '' }}
+        env:
+          ADDITIONAL_APP: ${{ inputs.additional-app }}
         run: |
-          ( cd apps/${{ inputs.additional-app }} && make vendor || true)
-          php occ a:e ${{ inputs.additional-app }}
+          ( cd "apps/${ADDITIONAL_APP}" && make vendor || true)
+          php occ a:e "${ADDITIONAL_APP}"
 
       - name: Setup app
         env:
