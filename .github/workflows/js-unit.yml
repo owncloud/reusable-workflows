@@ -25,10 +25,15 @@ on:
         type: string
         default: ''
 
+permissions:
+  contents: read
+
 jobs:
   js-unit:
     name: Javascript Unit
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - name: Validate app-repository
