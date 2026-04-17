@@ -1,0 +1,68 @@
+name: Create GitHub App PR
+description: Generate a GitHub App token and create or update a pull request
+
+inputs:
+  app-id:
+    description: GitHub App ID
+    required: true
+  app-private-key:
+    description: GitHub App private key
+    required: true
+  branch:
+    description: PR branch name
+    required: true
+  base:
+    description: Base branch for the PR (defaults to repo default branch)
+    required: false
+    default: ''
+  commit-message:
+    description: Commit message for the PR
+    required: true
+  title:
+    description: PR title
+    required: true
+  body:
+    description: PR body
+    required: true
+  reviewers:
+    description: Comma-separated reviewer logins
+    required: false
+    default: ''
+  team-reviewers:
+    description: Comma-separated team slugs
+    required: false
+    default: ''
+  sign-commits:
+    description: Whether to sign commits
+    required: false
+    default: 'true'
+  condition:
+    description: Set to 'false' to skip both steps (pass a GitHub Actions expression result)
+    required: false
+    default: 'true'
+
+runs:
+  using: composite
+  steps:
+    - name: Generate GitHub App token
+      id: app-token
+      if: ${{ inputs.condition == 'true' }}
+      uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3.1.1
+      with:
+        app-id: ${{ inputs.app-id }}
+        private-key: ${{ inputs.app-private-key }}
+
+    - name: Create or update PR
+      if: ${{ inputs.condition == 'true' }}
+      uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+      with:
+        token: ${{ steps.app-token.outputs.token }}
+        branch: ${{ inputs.branch }}
+        base: ${{ inputs.base }}
+        commit-message: ${{ inputs.commit-message }}
+        title: ${{ inputs.title }}
+        body: ${{ inputs.body }}
+        delete-branch: true
+        sign-commits: ${{ inputs.sign-commits }}
+        reviewers: ${{ inputs.reviewers }}
+        team-reviewers: ${{ inputs.team-reviewers }}
