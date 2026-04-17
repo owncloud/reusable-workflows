@@ -40,7 +40,6 @@ runs:
         extensions: apcu, ctype, curl, exif, fileinfo, gd, iconv, imagick, intl, json, mbstring, memcached, pdo, posix, simplexml, xml, zip, smbclient, ldap, krb5
         ini-values: "memory_limit=1024M"
       env:
-        fail-fast: true
         KRB5_LINUX_LIBS: libkrb5-dev
 
     - name: Install Linux packages
@@ -48,7 +47,12 @@ runs:
       shell: bash
       env:
         ADDITIONAL_PACKAGES: ${{ inputs.additional-packages }}
-      run: sudo apt-get install $ADDITIONAL_PACKAGES
+      run: |
+        if ! echo "$ADDITIONAL_PACKAGES" | grep -qE '^[a-zA-Z0-9 _.:+-]+$'; then
+          echo "Error: additional-packages contains invalid characters: $ADDITIONAL_PACKAGES"
+          exit 1
+        fi
+        echo "$ADDITIONAL_PACKAGES" | xargs sudo apt-get install -y
 
     - name: Install Core Dependencies
       shell: bash
@@ -69,18 +73,24 @@ runs:
         DB_TYPE=${DB%:*}
         if [ "$DB_TYPE" = "postgres" ]; then DB_TYPE="pgsql"; fi
         if [ "$DB_TYPE" = "mariadb" ]; then DB_TYPE="mysql"; fi
-        install_cmd="maintenance:install -vvv \
-          --database=${DB_TYPE} \
-          --database-name=${DB_NAME} \
-          --admin-user=${ADMIN_LOGIN} \
-          --admin-pass=${ADMIN_PASSWORD} \
-          --data-dir=${DATA_DIRECTORY}"
-        if [ "${DB_TYPE}" != "sqlite" ]; then
-          install_cmd+=" --database-host=${DB_HOST} \
-            --database-user=${DB_USERNAME} \
-            --database-pass=${DB_PASSWORD}"
+        if [ "$DB_TYPE" = "sqlite" ]; then
+          php occ maintenance:install -vvv \
+            --database="$DB_TYPE" \
+            --database-name="$DB_NAME" \
+            --admin-user="$ADMIN_LOGIN" \
+            --admin-pass="$ADMIN_PASSWORD" \
+            --data-dir="$DATA_DIRECTORY"
+        else
+          php occ maintenance:install -vvv \
+            --database="$DB_TYPE" \
+            --database-name="$DB_NAME" \
+            --admin-user="$ADMIN_LOGIN" \
+            --admin-pass="$ADMIN_PASSWORD" \
+            --data-dir="$DATA_DIRECTORY" \
+            --database-host="$DB_HOST" \
+            --database-user="$DB_USERNAME" \
+            --database-pass="$DB_PASSWORD"
         fi
-        php occ ${install_cmd}
         echo "enabling apps"
         php occ app:enable files_sharing
         php occ app:enable files_trashbin
