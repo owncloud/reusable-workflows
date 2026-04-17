@@ -36,82 +36,33 @@ jobs:
       contents: read
 
     steps:
-      - name: Validate app-repository
-        if: ${{ inputs.app-repository != '' }}
-        env:
-          APP_REPO: ${{ inputs.app-repository }}
-        run: |
-          if ! echo "$APP_REPO" | grep -qE '^owncloud/[a-zA-Z0-9._-]+$'; then
-            echo "Error: app-repository must be within the owncloud/ namespace, got: $APP_REPO"
-            exit 1
-          fi
-
-      - name: Clone owncloud/core
+      - name: Checkout reusable-workflows
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          repository: owncloud/core
-          ref: ${{ inputs.core-ref }}
+          repository: owncloud/reusable-workflows
+          ref: ${{ github.workflow_sha }}
+          path: _rw
+          persist-credentials: false
 
-      - name: Checkout apps/${{ inputs.app-name }}
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Setup ownCloud environment
+        uses: ./_rw/.github/actions/setup-owncloud-env
         with:
-          path: apps/${{ inputs.app-name }}
-          repository: ${{ inputs.app-repository }}
+          app-name: ${{ inputs.app-name }}
+          app-repository: ${{ inputs.app-repository }}
+          core-ref: ${{ inputs.core-ref }}
+          php-version: ${{ inputs.php-version }}
 
-      - name: Install Linux packages
-        if: ${{ inputs.additional-packages }}
-        env:
-          ADDITIONAL_PACKAGES: ${{ inputs.additional-packages }}
-        run: |
-          sudo apt-get install $ADDITIONAL_PACKAGES
-
-      - name: Setup PHP
-        uses: shivammathur/setup-php@accd6127cb78bee3e8082180cb391013d204ef9f # v2.37.0
+      - name: Setup PHP and server
+        uses: ./_rw/.github/actions/setup-php-server
         with:
           php-version: ${{ inputs.php-version }}
-          extensions: apcu, ctype, curl, exif, fileinfo, gd, iconv, imagick, intl, json, mbstring, memcached, pdo, posix, simplexml, xml, zip, smbclient, ldap, krb5
-          ini-values: "memory_limit=1024M"
-        env:
-          fail-fast: true
-          KRB5_LINUX_LIBS: libkrb5-dev
+          additional-packages: ${{ inputs.additional-packages }}
 
-      - name: Install Dependencies
+      - name: Setup app
         env:
           APP_NAME: ${{ inputs.app-name }}
         run: |
-          make
-          cd "apps/${APP_NAME}"
-          make vendor || true
-
-      - name: Install Server
-        env:
-          DATA_DIRECTORY: ${{ github.workspace }}/data
-          DB_TYPE: "sqlite"
-          DB_NAME: owncloud
-          ADMIN_LOGIN: admin
-          ADMIN_PASSWORD: admin
-
-        run: |
-          install_cmd="maintenance:install -vvv \
-            --database=${DB_TYPE} \
-            --database-name=${DB_NAME} \
-            --admin-user=${ADMIN_LOGIN} \
-            --admin-pass=${ADMIN_PASSWORD} \
-            --data-dir=${DATA_DIRECTORY} "
-          
-          php occ ${install_cmd}
-          echo "enabling apps"
-          php occ app:enable files_sharing
-          php occ app:enable files_trashbin
-          php occ app:enable files_versions
-          php occ app:enable provisioning_api
-          php occ app:enable federation
-          php occ app:enable federatedfilesharing
-
-      - name: Setup App
-        env:
-          APP_NAME: ${{ inputs.app-name }}
-        run: |
+          ( cd "apps/${APP_NAME}" && make vendor || true)
           php occ a:e "${APP_NAME}"
 
       - name: Run jsunit
@@ -120,4 +71,3 @@ jobs:
         run: |
           cd "apps/${APP_NAME}"
           make test-js
-

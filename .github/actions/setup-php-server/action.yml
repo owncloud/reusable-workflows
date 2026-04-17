@@ -1,0 +1,100 @@
+name: Setup PHP and ownCloud Server
+description: Install PHP, optional Linux packages, core dependencies, and ownCloud server
+
+inputs:
+  php-version:
+    description: PHP version to install
+    required: true
+  additional-packages:
+    description: Extra apt-get packages (space-separated)
+    required: false
+    default: ''
+  database:
+    description: 'Database identifier, e.g. sqlite, mysql:8.0, mariadb:10.6, postgres:10.21'
+    required: false
+    default: sqlite
+  database-name:
+    description: Database name
+    required: false
+    default: owncloud
+  database-user:
+    description: Database user
+    required: false
+    default: owncloud
+  database-pass:
+    description: Database password
+    required: false
+    default: owncloud
+  database-host:
+    description: Database host
+    required: false
+    default: '127.0.0.1'
+
+runs:
+  using: composite
+  steps:
+    - name: Setup PHP
+      uses: shivammathur/setup-php@accd6127cb78bee3e8082180cb391013d204ef9f # v2.37.0
+      with:
+        php-version: ${{ inputs.php-version }}
+        extensions: apcu, ctype, curl, exif, fileinfo, gd, iconv, imagick, intl, json, mbstring, memcached, pdo, posix, simplexml, xml, zip, smbclient, ldap, krb5
+        ini-values: "memory_limit=1024M"
+      env:
+        KRB5_LINUX_LIBS: libkrb5-dev
+
+    - name: Install Linux packages
+      if: ${{ inputs.additional-packages != '' }}
+      shell: bash
+      env:
+        ADDITIONAL_PACKAGES: ${{ inputs.additional-packages }}
+      run: |
+        if ! echo "$ADDITIONAL_PACKAGES" | grep -qE '^[a-zA-Z0-9 _.:+-]+$'; then
+          echo "Error: additional-packages contains invalid characters: $ADDITIONAL_PACKAGES"
+          exit 1
+        fi
+        echo "$ADDITIONAL_PACKAGES" | xargs sudo apt-get install -y
+
+    - name: Install Core Dependencies
+      shell: bash
+      run: make
+
+    - name: Install Server
+      shell: bash
+      env:
+        DATA_DIRECTORY: ${{ github.workspace }}/data
+        DB: ${{ inputs.database }}
+        DB_NAME: ${{ inputs.database-name }}
+        ADMIN_LOGIN: admin
+        ADMIN_PASSWORD: admin
+        DB_HOST: ${{ inputs.database-host }}
+        DB_USERNAME: ${{ inputs.database-user }}
+        DB_PASSWORD: ${{ inputs.database-pass }}
+      run: |
+        DB_TYPE=${DB%:*}
+        if [ "$DB_TYPE" = "postgres" ]; then DB_TYPE="pgsql"; fi
+        if [ "$DB_TYPE" = "mariadb" ]; then DB_TYPE="mysql"; fi
+        if [ "$DB_TYPE" = "sqlite" ]; then
+          php occ maintenance:install -vvv \
+            --database="$DB_TYPE" \
+            --database-name="$DB_NAME" \
+            --admin-user="$ADMIN_LOGIN" \
+            --admin-pass="$ADMIN_PASSWORD" \
+            --data-dir="$DATA_DIRECTORY"
+        else
+          php occ maintenance:install -vvv \
+            --database="$DB_TYPE" \
+            --database-name="$DB_NAME" \
+            --admin-user="$ADMIN_LOGIN" \
+            --admin-pass="$ADMIN_PASSWORD" \
+            --data-dir="$DATA_DIRECTORY" \
+            --database-host="$DB_HOST" \
+            --database-user="$DB_USERNAME" \
+            --database-pass="$DB_PASSWORD"
+        fi
+        echo "enabling apps"
+        php occ app:enable files_sharing
+        php occ app:enable files_trashbin
+        php occ app:enable files_versions
+        php occ app:enable provisioning_api
+        php occ app:enable federation
+        php occ app:enable federatedfilesharing

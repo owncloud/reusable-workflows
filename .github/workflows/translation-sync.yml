@@ -51,12 +51,21 @@ jobs:
       image: owncloudci/transifex@sha256:b34396c63ce246a34ceb441b8c39067f7f46090b6de5f51dbf656e9be69d7185
 
     steps:
+      - name: Checkout reusable-workflows
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: owncloud/reusable-workflows
+          ref: ${{ github.workflow_sha }}
+          path: _rw
+          persist-credentials: false
+
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ inputs.branch }}
           fetch-depth: 0
           persist-credentials: false
+          clean: false
 
       - name: Create translation directory
         if: inputs.mode == 'old'
@@ -162,23 +171,15 @@ jobs:
           find . -name "yo.*" -type f -print0 | xargs -r -0 git rm -f
           find . -name "ne.*" -type f -print0 | xargs -r -0 git rm -f
 
-      - name: Generate GitHub App token
-        id: app-token
-        uses: actions/create-github-app-token@1b10c78c7865c340bc4f6099eb2f838309f1e8c3 # v3.1.1
+      - name: Create or update translations PR
+        uses: ./_rw/.github/actions/github-app-pr
         with:
           app-id: ${{ secrets.TRANSLATION_APP_ID }}
-          private-key: ${{ secrets.TRANSLATION_APP_PRIVATE_KEY }}
-
-      - name: Create or update translations PR
-        if: github.ref == format('refs/heads/{0}', inputs.branch)
-        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
-        with:
-          token: ${{ steps.app-token.outputs.token }}
+          app-private-key: ${{ secrets.TRANSLATION_APP_PRIVATE_KEY }}
           branch: chore/translations-update
           commit-message: "chore: update translations from transifex"
           title: "chore: update translations from transifex"
           body: "Automated translation update from Transifex. This pull request is updated on each sync run — merging it will close it and a fresh one will be opened on the next change."
-          delete-branch: true
-          sign-commits: true
           reviewers: ${{ inputs.reviewers }}
           team-reviewers: ${{ inputs.team_reviewers }}
+          condition: ${{ github.ref == format('refs/heads/{0}', inputs.branch) }}

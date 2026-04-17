@@ -1,0 +1,69 @@
+name: Setup ownCloud Environment
+description: Checkout owncloud/core, the app under test, and an optional additional app
+
+inputs:
+  app-name:
+    description: App directory name under apps/
+    required: true
+  app-repository:
+    description: Override repo for app checkout (must be owncloud/*)
+    required: false
+    default: ''
+  core-ref:
+    description: Ref to use for owncloud/core checkout
+    required: false
+    default: ''
+  core-ref-php74:
+    description: Override core ref when PHP version is 7.4
+    required: false
+    default: ''
+  php-version:
+    description: Current PHP version (used to select core ref when 7.4)
+    required: false
+    default: ''
+  additional-app:
+    description: Optional second app to check out
+    required: false
+    default: ''
+  additional-app-github-token:
+    description: Token for private additional-app repo
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - name: Validate app-repository
+      if: ${{ inputs.app-repository != '' }}
+      shell: bash
+      env:
+        APP_REPO: ${{ inputs.app-repository }}
+      run: |
+        if ! echo "$APP_REPO" | grep -qE '^owncloud/[a-zA-Z0-9._-]+$'; then
+          echo "Error: app-repository must be within the owncloud/ namespace, got: $APP_REPO"
+          exit 1
+        fi
+
+    - name: Clone owncloud/core
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        repository: owncloud/core
+        ref: ${{ inputs.php-version == '7.4' && inputs.core-ref-php74 != '' && inputs.core-ref-php74 || inputs.core-ref }}
+        persist-credentials: false
+        clean: false
+
+    - name: Checkout apps/${{ inputs.app-name }}
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        path: apps/${{ inputs.app-name }}
+        repository: ${{ inputs.app-repository }}
+        persist-credentials: false
+
+    - name: Checkout apps/${{ inputs.additional-app }}
+      if: ${{ inputs.additional-app != '' }}
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        path: apps/${{ inputs.additional-app }}
+        repository: owncloud/${{ inputs.additional-app }}
+        token: ${{ inputs.additional-app-github-token || github.token }}
+        persist-credentials: false
