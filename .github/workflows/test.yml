@@ -83,3 +83,20 @@ jobs:
     name: Changelog
     uses: ./.github/workflows/calens.yml
     secrets: inherit
+
+  acceptance-api:
+    name: API acceptance tests
+    uses: ./.github/workflows/acceptance.yml
+    with:
+      app-name: impersonate
+      app-repository: owncloud/impersonate
+      do-api-tests: true
+
+  acceptance-webui:
+    name: WebUI acceptance tests
+    uses: ./.github/workflows/acceptance.yml
+    with:
+      app-name: impersonate
+      app-repository: owncloud/impersonate
+      do-webui-tests: true
+
