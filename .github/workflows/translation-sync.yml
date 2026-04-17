@@ -51,12 +51,21 @@ jobs:
       image: owncloudci/transifex@sha256:b34396c63ce246a34ceb441b8c39067f7f46090b6de5f51dbf656e9be69d7185
 
     steps:
+      - name: Checkout reusable-workflows
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: owncloud/reusable-workflows
+          ref: ${{ github.workflow_sha }}
+          path: _rw
+          persist-credentials: false
+
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ inputs.branch }}
           fetch-depth: 0
           persist-credentials: false
+          clean: false
 
       - name: Create translation directory
         if: inputs.mode == 'old'
@@ -163,7 +172,7 @@ jobs:
           find . -name "ne.*" -type f -print0 | xargs -r -0 git rm -f
 
       - name: Create or update translations PR
-        uses: ./.github/actions/github-app-pr
+        uses: ./_rw/.github/actions/github-app-pr
         with:
           app-id: ${{ secrets.TRANSLATION_APP_ID }}
           app-private-key: ${{ secrets.TRANSLATION_APP_PRIVATE_KEY }}

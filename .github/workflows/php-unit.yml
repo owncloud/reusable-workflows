@@ -93,8 +93,16 @@ jobs:
           - 5432:5432
 
     steps:
+      - name: Checkout reusable-workflows
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: owncloud/reusable-workflows
+          ref: ${{ github.workflow_sha }}
+          path: _rw
+          persist-credentials: false
+
       - name: Setup ownCloud environment
-        uses: ./.github/actions/setup-owncloud-env
+        uses: ./_rw/.github/actions/setup-owncloud-env
         with:
           app-name: ${{ inputs.app-name }}
           app-repository: ${{ inputs.app-repository }}
@@ -105,7 +113,7 @@ jobs:
           additional-app-github-token: ${{ inputs.additional-app-github-token }}
 
       - name: Setup PHP and server
-        uses: ./.github/actions/setup-php-server
+        uses: ./_rw/.github/actions/setup-php-server
         with:
           php-version: ${{ matrix.php }}
           additional-packages: ${{ inputs.additional-packages }}

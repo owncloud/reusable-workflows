@@ -28,11 +28,20 @@ jobs:
       contents: read
 
     steps:
+      - name: Checkout reusable-workflows
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: owncloud/reusable-workflows
+          ref: ${{ github.workflow_sha }}
+          path: _rw
+          persist-credentials: false
+
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
           persist-credentials: false
+          clean: false
 
       - name: Generate changelog
         uses: actionhippie/calens@244f3e5c328b842a740113859b87bbebf697f63b # v1.13.1
@@ -48,7 +57,7 @@ jobs:
         run: cat "$TARGET"
 
       - name: Create or update changelog PR
-        uses: ./.github/actions/github-app-pr
+        uses: ./_rw/.github/actions/github-app-pr
         with:
           app-id: ${{ secrets.TRANSLATION_APP_ID }}
           app-private-key: ${{ secrets.TRANSLATION_APP_PRIVATE_KEY }}
