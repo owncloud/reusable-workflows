@@ -6,7 +6,7 @@ inputs:
     description: GitHub App ID
     required: true
   app-private-key:
-    description: GitHub App private key
+    description: GitHub App private key (pass via secrets, not plain inputs)
     required: true
   branch:
     description: PR branch name
