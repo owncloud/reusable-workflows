@@ -142,25 +142,33 @@ jobs:
           ( cd apps/${{ inputs.additional-app }} && make vendor || true)
           php occ a:e ${{ inputs.additional-app }}
 
-      - name: Setup apps/${{ inputs.app-name }}
+      - name: Setup app
+        env:
+          APP_NAME: ${{ inputs.app-name }}
         run: |
-          ( cd apps/${{ inputs.app-name }} && make vendor || true)
-          php occ a:e ${{ inputs.app-name }}
+          ( cd "apps/${APP_NAME}" && make vendor || true)
+          php occ a:e "${APP_NAME}"
 
       - name: Run PHP Code Style Checks
+        env:
+          APP_NAME: ${{ inputs.app-name }}
         run: |
-          cd apps/${{ inputs.app-name }}
+          cd "apps/${APP_NAME}"
           make test-php-style
 
       - name: Run PHP Stan
         if: ${{ !inputs.disable-phpstan }}
+        env:
+          APP_NAME: ${{ inputs.app-name }}
         run: |
-          cd apps/${{ inputs.app-name }}
+          cd "apps/${APP_NAME}"
           make test-php-phpstan
 
       - name: Run PHP Phan
         if: ${{ !inputs.disable-phan }}
+        env:
+          APP_NAME: ${{ inputs.app-name }}
         run: |
-          cd apps/${{ inputs.app-name }}
+          cd "apps/${APP_NAME}"
           make test-php-phan
 

@@ -182,20 +182,26 @@ jobs:
           ( cd apps/${{ inputs.additional-app }} && make vendor || true)
           php occ a:e ${{ inputs.additional-app }}
 
-      - name: Setup apps/${{ inputs.app-name }}
+      - name: Setup app
+        env:
+          APP_NAME: ${{ inputs.app-name }}
         run: |
-          ( cd apps/${{ inputs.app-name }} && make vendor || true)
-          php occ a:e ${{ inputs.app-name }}
+          ( cd "apps/${APP_NAME}" && make vendor || true)
+          php occ a:e "${APP_NAME}"
 
       - name: Run PHPUnit
+        env:
+          APP_NAME: ${{ inputs.app-name }}
         run: |
-          cd apps/${{ inputs.app-name }}
+          cd "apps/${APP_NAME}"
           make test-php-unit
 
       - name: Run PHP Integration tests
         if: ${{ inputs.do-integration-tests }}
+        env:
+          APP_NAME: ${{ inputs.app-name }}
         run: |
-          cd apps/${{ inputs.app-name }}
+          cd "apps/${APP_NAME}"
           make test-php-integration
 
       - name: Tail log
