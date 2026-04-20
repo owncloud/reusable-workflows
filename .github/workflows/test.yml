@@ -82,7 +82,9 @@ jobs:
   calens:
     name: Changelog
     uses: ./.github/workflows/calens.yml
-    secrets: inherit
+    secrets:
+      APP_ID: ${{ secrets.CALENS_APP_ID }}
+      APP_PRIVATE_KEY: ${{ secrets.CALENS_APP_PRIVATE_KEY }}
 
   acceptance-api:
     name: API acceptance tests
@@ -99,4 +101,3 @@ jobs:
       app-name: impersonate
       app-repository: owncloud/impersonate
       do-webui-tests: true
-
