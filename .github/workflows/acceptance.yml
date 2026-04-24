@@ -307,6 +307,7 @@ jobs:
         run: |
           cd "apps/${APP_NAME}"
           make ci
+          sudo -u www-data rm -rf /var/www/html${SERVER_ROOT}/apps/${APP_NAME}
           sudo -u www-data mkdir /var/www/html${SERVER_ROOT}/apps/${APP_NAME}
           sudo -u www-data cp -r * /var/www/html${SERVER_ROOT}/apps/${APP_NAME}
           cd "/var/www/html${SERVER_ROOT}"
@@ -319,6 +320,7 @@ jobs:
           FEDERATED_ROOT: ${{ steps.prepend.outputs.federated-root }}
         run: |
           cd "apps/${APP_NAME}"
+          sudo -u www-data rm -rf /var/www/html${FEDERATED_ROOT}/apps/${APP_NAME}
           sudo -u www-data mkdir /var/www/html${FEDERATED_ROOT}/apps/${APP_NAME}
           sudo -u www-data cp -r * /var/www/html${FEDERATED_ROOT}/apps/${APP_NAME}
           cd "/var/www/html${FEDERATED_ROOT}"
@@ -332,6 +334,7 @@ jobs:
         run: |
           cd "apps/${ADDITIONAL_APP}"
           make ci
+          sudo -u www-data rm -rf /var/www/html${SERVER_ROOT}/apps/${ADDITIONAL_APP}
           sudo -u www-data mkdir /var/www/html${SERVER_ROOT}/apps/${ADDITIONAL_APP}
           sudo -u www-data cp -r * /var/www/html${SERVER_ROOT}/apps/${ADDITIONAL_APP}
           cd "/var/www/html${SERVER_ROOT}"
@@ -344,6 +347,7 @@ jobs:
           FEDERATED_ROOT: ${{ steps.prepend.outputs.federated-root }}
         run: |
           cd "apps/${ADDITIONAL_APP}"
+          sudo -u www-data rm -rf /var/www/html${FEDERATED_ROOT}/apps/${ADDITIONAL_APP}
           sudo -u www-data mkdir /var/www/html${FEDERATED_ROOT}/apps/${ADDITIONAL_APP}
           sudo -u www-data cp -r * /var/www/html${FEDERATED_ROOT}/apps/${ADDITIONAL_APP}
           cd "/var/www/html${FEDERATED_ROOT}"
