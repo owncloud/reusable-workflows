@@ -75,6 +75,11 @@ on:
         required: false
         type: string
         default: ''
+      use-email-server:
+        description: 'Provide an email server for tests to use'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -296,6 +301,13 @@ jobs:
             --name selenium-chrome \
             selenium/standalone-chrome-debug:3.141.59-oxygen
 
+      - name: Inbucket Email Server
+        if: ${{ inputs.use-email-server }}
+        run: |
+          docker run -d --rm --network host \
+            --name email \
+            inbucket/inbucket
+
       - name: Make local core
         run: |
           make
@@ -439,6 +451,10 @@ jobs:
         env:
           FEDERATED_ROOT: ${{ steps.prepend.outputs.federated-root }}
         run: echo "TEST_SERVER_FED_URL=http://localhost${FEDERATED_ROOT}" >> $GITHUB_ENV
+
+      - name: Define environment variable pointing to the email server
+        if: ${{ inputs.use-email-server  }}
+        run: echo "EMAIL_HOST=localhost" >> $GITHUB_ENV
 
       - name: Install libxml2-utils to get xmllint used by acceptance test script
         run: sudo apt install -y libxml2-utils
