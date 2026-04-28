@@ -101,3 +101,12 @@ jobs:
       app-name: impersonate
       app-repository: owncloud/impersonate
       do-webui-tests: true
+
+  acceptance-api-email:
+    name: API acceptance tests with Email Server
+    uses: ./.github/workflows/acceptance.yml
+    with:
+      app-name: notifications
+      app-repository: owncloud/notifications
+      do-api-tests: true
+      use-email-server: true
