@@ -75,6 +75,15 @@ jobs:
       php-version: '8.3'
       additional-packages: exiftool bison
 
+  js-unit-xvfb-display:
+    name: JS Unit with Xvfb Display Server
+    uses: ./.github/workflows/js-unit.yml
+    with:
+      app-name: calendar
+      app-repository: owncloud/calendar
+      php-version: '8.3'
+      enable-xvfb-display-server: true
+
   build-dist:
     name: Build dist
     uses: ./.github/workflows/build.yml
