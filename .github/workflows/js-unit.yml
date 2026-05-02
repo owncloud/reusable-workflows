@@ -72,8 +72,6 @@ jobs:
 
       - name: Xvfb display server
         if: ${{ inputs.enable-xvfb-display-server }}
-        env:
-          ADDITIONAL_PACKAGES: ${{ inputs.additional-packages }}
         run: |
           /usr/bin/Xvfb :99 &
           echo "DISPLAY=:99.0" >> $GITHUB_ENV
