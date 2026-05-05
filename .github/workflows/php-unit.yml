@@ -44,6 +44,16 @@ on:
         required: false
         type: string
         default: ''
+      use-scality-s3:
+        description: 'Provide a scality S3 server for tests to use'
+        required: false
+        type: boolean
+        default: false
+      scality-s3-test-config:
+        description: Name of the scality config.php for the test code to use
+        required: false
+        type: string
+        default: 'scality'
 
 permissions:
   contents: read
@@ -140,6 +150,17 @@ jobs:
           fail-fast: true
           KRB5_LINUX_LIBS: libkrb5-dev
 
+      - name: Scality S3 Server
+        if: ${{ inputs.use-scality-s3 }}
+        env:
+          HOST_NAME: localhost
+          SCALITY_ACCESS_KEY_ID: owncloud123456
+          SCALITY_SECRET_ACCESS_KEY: secret123456
+        run: |
+          docker run -d --rm --network host \
+            --name scality \
+            owncloudci/scality-s3server
+
       - name: Install Core Dependencies
         run: |
           make
@@ -195,6 +216,16 @@ jobs:
         run: |
           ( cd "apps/${APP_NAME}" && make vendor || true)
           php occ a:e "${APP_NAME}"
+
+      - name: Setup for Scality S3 Server tests
+        if: ${{ inputs.use-scality-s3 }}
+        env:
+          APP_NAME: ${{ inputs.app-name }}
+          TEST_CONFIG_FILE: ${{ inputs.scality-s3-test-config }}
+        run: |
+          cp "apps/${APP_NAME}/tests/drone/${TEST_CONFIG_FILE}.config.php" config
+          php occ s3:create-bucket owncloud --accept-warning
+          for I in $(seq 1 9); do php occ s3:create-bucket owncloud$I --accept-warning; done
 
       - name: Run PHPUnit
         env:
