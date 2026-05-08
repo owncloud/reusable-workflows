@@ -157,10 +157,10 @@ jobs:
           cd "$SUB_PATH"
           find . -name "*.po" -type f -delete
           find . -name "*.pot" -type f -delete
-          find . -name "or_IN.*" -type f -print0 | xargs -r -0 git rm -f
-          find . -name "uz.*" -type f -print0 | xargs -r -0 git rm -f
-          find . -name "yo.*" -type f -print0 | xargs -r -0 git rm -f
-          find . -name "ne.*" -type f -print0 | xargs -r -0 git rm -f
+          find . -name "or_IN.*" -type f -print0 | xargs -r -0 rm -f
+          find . -name "uz.*" -type f -print0 | xargs -r -0 rm -f
+          find . -name "yo.*" -type f -print0 | xargs -r -0 rm -f
+          find . -name "ne.*" -type f -print0 | xargs -r -0 rm -f
 
       - name: Generate GitHub App token
         id: app-token
