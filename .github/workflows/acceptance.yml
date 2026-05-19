@@ -25,6 +25,11 @@ on:
         required: false
         type: string
         default: ''
+      app-ref:
+        description: 'Git ref (branch, tag, or SHA) to checkout for the app repository. Defaults to the repository default branch.'
+        required: false
+        type: string
+        default: ''
       server-folder:
         description: 'The folder under the Apache root in which to install owncloud core'
         required: false
@@ -166,6 +171,7 @@ jobs:
         with:
           path: apps/${{ inputs.app-name }}
           repository: ${{ inputs.app-repository }}
+          ref: ${{ inputs.app-ref }}
 
       - name: Checkout additional app
         if: ${{ inputs.additional-app != '' }}

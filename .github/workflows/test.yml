@@ -119,3 +119,22 @@ jobs:
       app-repository: owncloud/notifications
       do-api-tests: true
       use-email-server: true
+
+  acceptance-api-oc10:
+    name: API acceptance tests (OC10)
+    uses: ./.github/workflows/acceptance.yml
+    with:
+      app-name: impersonate
+      app-repository: owncloud/impersonate
+      app-ref: 'v0.6.1'
+      do-api-tests: true
+      server-version: '10.16.2-qa'
+
+  acceptance-api-explicit-default:
+    name: API acceptance tests (explicit default version)
+    uses: ./.github/workflows/acceptance.yml
+    with:
+      app-name: impersonate
+      app-repository: owncloud/impersonate
+      do-api-tests: true
+      server-version: 'daily-master-qa'
