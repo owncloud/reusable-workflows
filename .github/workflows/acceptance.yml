@@ -70,6 +70,11 @@ on:
         required: false
         type: string
         default: 'master'
+      server-version:
+        description: 'ownCloud server version to install (passed as PLUGIN_VERSION to owncloudci/core docker image). Use daily-master-qa for the OC11 nightly, or e.g. 10.16.2-qa for an OC10 testing release.'
+        required: false
+        type: string
+        default: 'daily-master-qa'
       filter-tags:
         description: test tags to run (or not run)
         required: false
@@ -231,7 +236,7 @@ jobs:
       - name: Install owncloud/core
         env:
           SERVER_ROOT: ${{ steps.prepend.outputs.server-root }}
-          VERSION: 'daily-master-qa'
+          VERSION: ${{ inputs.server-version }}
           CORE_PATH: /var/www/html${{ steps.prepend.outputs.server-root }}
           DB_TYPE: 'mysql'
           DB_NAME: 'owncloud'
@@ -260,7 +265,7 @@ jobs:
         if: ${{ inputs.federated-folder != '' }}
         env:
           FEDERATED_ROOT: ${{ steps.prepend.outputs.federated-root }}
-          VERSION: 'daily-master-qa'
+          VERSION: ${{ inputs.server-version }}
           CORE_PATH: /var/www/html${{ steps.prepend.outputs.federated-root }}
           DB_TYPE: 'mysql'
           DB_NAME: federateddb
