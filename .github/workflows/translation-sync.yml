@@ -97,8 +97,8 @@ jobs:
           cd "$SUB_PATH"
           make l10n-push
 
-      - name: Translation push (old)
-        if: inputs.mode == 'old' && github.ref == format('refs/heads/{0}', inputs.branch)
+      - name: Translation push (old/native)
+        if: inputs.mode != 'make' && github.ref == format('refs/heads/{0}', inputs.branch)
         env:
           TX_TOKEN: ${{ secrets.TX_TOKEN }}
           SUB_PATH: ${{ inputs.sub_path }}
