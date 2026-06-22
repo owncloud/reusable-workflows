@@ -32,7 +32,7 @@ jobs:
           persist-credentials: false
 
       - name: Generate changelog
-        uses: actionhippie/calens@0b8ceba55a72f5ef8b7d910698fcd28be8bb8c19 # v1.13.4
+        uses: actionhippie/calens@6c54a62bb0c9ac28f361e40f536fe0c69ba50e34 # v1.14.1
         with:
           target: ${{ inputs.target }}
 
