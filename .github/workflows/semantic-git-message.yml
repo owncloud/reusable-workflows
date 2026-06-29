@@ -5,17 +5,38 @@ permissions:
   contents: read
 
 jobs:
+  calculate-depth:
+    name: Calculate commits in the PR
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      calculated_depth: ${{ steps.calc.outputs.depth }}
+    steps:
+      - name: Compute the required fetch_depth
+        id: calc
+        run: |
+          PR_COMMITS=${{ github.event.pull_request.commits }}
+          if [ -z "$PR_COMMITS" ]; then
+            echo "Not a PR event. Using default fetch_depth of 1"
+            REQUIRED_DEPTH=1
+          else
+            echo "PR event detected with $PR_COMMITS commits"
+            REQUIRED_DEPTH=$((PR_COMMITS + 1))
+          fi
+          echo "depth=$REQUIRED_DEPTH" >> $GITHUB_OUTPUT
+
   validate-semantic-commits:
     name: Validate semantic commits
     runs-on: ubuntu-latest
+    needs: calculate-depth
     permissions:
       contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
-          fetch-depth: 0
+          fetch-depth: ${{ needs.calculate-depth.outputs.calculated_depth }}
 
       - name: Validate commit messages
         uses: webiny/action-conventional-commits@7f91b1595ca1951cdb671ddc9f07a49081ec5b69 # v1.4.2
-
