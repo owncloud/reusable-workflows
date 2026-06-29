@@ -365,6 +365,23 @@ jobs:
           cd "/var/www/html${FEDERATED_ROOT}"
           sudo -u www-data php occ a:e "${ADDITIONAL_APP}"
 
+      - name: Upgrade owncloud after enabling apps
+        env:
+          SERVER_ROOT: ${{ steps.prepend.outputs.server-root }}
+          FEDERATED_ROOT: ${{ steps.prepend.outputs.federated-root }}
+        run: |
+          # The base install (daily-master-qa) may register an older version of
+          # the app(s) under test. Copying in a newer checkout flags the
+          # instance as "needs upgrade", after which it answers 503 to every
+          # request until `occ upgrade` runs. Exit code 3 ("already up to date")
+          # is expected when no upgrade is pending and must not fail the step.
+          cd "/var/www/html${SERVER_ROOT}"
+          sudo -u www-data php occ upgrade --no-app-disable || [ $? -eq 3 ]
+          if [ -n "${FEDERATED_ROOT}" ]; then
+            cd "/var/www/html${FEDERATED_ROOT}"
+            sudo -u www-data php occ upgrade --no-app-disable || [ $? -eq 3 ]
+          fi
+
       - name: Setup owncloud server settings
         env:
           SERVER_ROOT: ${{ steps.prepend.outputs.server-root }}
