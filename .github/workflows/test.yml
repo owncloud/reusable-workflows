@@ -27,16 +27,16 @@ jobs:
     name: PHP Code Style
     uses: ./.github/workflows/php-codestyle.yml
     with:
-      app-name: impersonate
-      app-repository: owncloud/impersonate
+      app-name: activity
+      app-repository: owncloud/activity
       php-versions: '["8.3"]'
 
   php-code-style-no-phan:
     name: PHP Code Style (--no-phan)
     uses: ./.github/workflows/php-codestyle.yml
     with:
-      app-name: impersonate
-      app-repository: owncloud/impersonate
+      app-name: activity
+      app-repository: owncloud/activity
       php-versions: '["8.3"]'
       disable-phan: true
 
@@ -44,8 +44,8 @@ jobs:
     name: PHP Code Style (+additional app)
     uses: ./.github/workflows/php-codestyle.yml
     with:
-      app-name: impersonate
-      app-repository: owncloud/impersonate
+      app-name: activity
+      app-repository: owncloud/activity
       php-versions: '["8.3"]'
       additional-app: customgroups
 
@@ -53,8 +53,8 @@ jobs:
     name: PHP Unit
     uses: ./.github/workflows/php-unit.yml
     with:
-      app-name: impersonate
-      app-repository: owncloud/impersonate
+      app-name: activity
+      app-repository: owncloud/activity
       php-versions: '["8.3"]'
 
   php-integration:
@@ -99,17 +99,18 @@ jobs:
     name: API acceptance tests
     uses: ./.github/workflows/acceptance.yml
     with:
-      app-name: impersonate
-      app-repository: owncloud/impersonate
+      app-name: activity
+      app-repository: owncloud/activity
       do-api-tests: true
 
   acceptance-webui:
     name: WebUI acceptance tests
     uses: ./.github/workflows/acceptance.yml
     with:
-      app-name: impersonate
-      app-repository: owncloud/impersonate
+      app-name: activity
+      app-repository: owncloud/activity
       do-webui-tests: true
+      test-suites: "['webUIActivityComments', 'webUIActivityTags']"
 
   acceptance-api-email:
     name: API acceptance tests with Email Server
