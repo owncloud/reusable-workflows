@@ -100,7 +100,7 @@ jobs:
     services:
       mysql:
         image: >-
-          ${{ (startsWith(matrix.database,'mysql:') || startsWith(matrix.database,'mariadb:')) && matrix.database || '' }}
+          ${{ case(startsWith(matrix.database,'mysql:') || startsWith(matrix.database,'mariadb:'), matrix.database, '') }}
         env:
           MYSQL_ROOT_PASSWORD: password
           MYSQL_DATABASE: owncloud
@@ -114,7 +114,7 @@ jobs:
         ports:
           - 3306:3306
       postgres:
-        image: ${{ startsWith(matrix.database,'postgres:') && matrix.database || '' }}
+        image: ${{ case(startsWith(matrix.database,'postgres:'), matrix.database, '') }}
         env:
           POSTGRES_DB: owncloud
           POSTGRES_USER: owncloud
@@ -168,7 +168,7 @@ jobs:
         with:
           path: apps/${{ inputs.additional-app }}
           repository: owncloud/${{ inputs.additional-app }}
-          token: ${{ inputs.additional-app-github-token || github.token }}
+          token: ${{ case(inputs.additional-app-github-token != '', inputs.additional-app-github-token, github.token) }}
 
       - name: Install Linux packages
         if: ${{ inputs.additional-packages }}

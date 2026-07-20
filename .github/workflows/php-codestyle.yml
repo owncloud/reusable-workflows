@@ -93,7 +93,7 @@ jobs:
         with:
           path: apps/${{ inputs.additional-app }}
           repository: owncloud/${{ inputs.additional-app }}
-          token: ${{ inputs.additional-app-github-token || github.token }}
+          token: ${{ case(inputs.additional-app-github-token != '', inputs.additional-app-github-token, github.token) }}
 
       - name: Install Linux packages
         if: ${{ inputs.additional-packages }}
