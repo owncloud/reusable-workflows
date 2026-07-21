@@ -236,7 +236,7 @@ jobs:
       - name: Install owncloud/core
         env:
           SERVER_ROOT: ${{ steps.prepend.outputs.server-root }}
-          VERSION: 'daily-master-qa'
+          DOWNLOAD_URL: 'https://github.com/owncloud/core/releases/download/daily/owncloud-daily-master-qa.tar.bz2'
           CORE_PATH: /var/www/html${{ steps.prepend.outputs.server-root }}
           DB_TYPE: 'mysql'
           DB_NAME: 'owncloud'
@@ -246,7 +246,7 @@ jobs:
         run: |
           docker run -v /var/www/html${SERVER_ROOT}:/var/www/html${SERVER_ROOT} \
             --network=host \
-            -e PLUGIN_VERSION=${VERSION} \
+            -e PLUGIN_DOWNLOAD_URL=${DOWNLOAD_URL} \
             -e PLUGIN_CORE_PATH=${CORE_PATH} \
             -e PLUGIN_DB_TYPE=${DB_TYPE} \
             -e PLUGIN_DB_NAME=${DB_NAME} \
@@ -265,7 +265,7 @@ jobs:
         if: ${{ inputs.federated-folder != '' }}
         env:
           FEDERATED_ROOT: ${{ steps.prepend.outputs.federated-root }}
-          VERSION: 'daily-master-qa'
+          DOWNLOAD_URL: 'https://github.com/owncloud/core/releases/download/daily/owncloud-daily-master-qa.tar.bz2'
           CORE_PATH: /var/www/html${{ steps.prepend.outputs.federated-root }}
           DB_TYPE: 'mysql'
           DB_NAME: federateddb
@@ -275,7 +275,7 @@ jobs:
         run: |
           docker run -v /var/www/html${FEDERATED_ROOT}:/var/www/html${FEDERATED_ROOT} \
             --network=host \
-            -e PLUGIN_VERSION=${VERSION} \
+            -e PLUGIN_DOWNLOAD_URL=${DOWNLOAD_URL} \
             -e PLUGIN_CORE_PATH=${CORE_PATH} \
             -e PLUGIN_DB_TYPE=${DB_TYPE} \
             -e PLUGIN_DB_NAME=${DB_NAME} \
