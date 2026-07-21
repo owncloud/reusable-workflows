@@ -59,6 +59,11 @@ on:
         required: false
         type: string
         default: 'scality'
+      use-ceph-s3:
+        description: 'Provide a ceph S3 server for tests to use'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -166,6 +171,63 @@ jobs:
             --name scality \
             owncloudci/scality-s3server
 
+      - name: Wait for Scality S3 Server
+        if: ${{ inputs.use-scality-s3 }}
+        run: |
+          timeout 120 bash -c 'until (exec 3<>/dev/tcp/localhost/8000) 2>/dev/null; do sleep 2; done'
+
+      - name: Ceph S3 Server
+        if: ${{ inputs.use-ceph-s3 }}
+        env:
+          RGW_NAME: localhost
+          CEPH_DEMO_UID: owncloud
+          RGW_CIVETWEB_PORT: 8080
+          CEPH_DEMO_ACCESS_KEY: owncloud123456
+          CEPH_DEMO_SECRET_KEY: secret123456
+        run: |
+          # The ceph image's NETWORK_AUTO_DETECT picks the highest-traffic NIC
+          # from /proc/net/dev. On the host-networked runner that is the Azure
+          # accelerated-networking VF (e.g. enP*), which has no IPv4 address, so
+          # the mon bootstrap fails with "unable to discover the network settings"
+          # and the container exits before radosgw binds 8080. Pin the network to
+          # the real default-route interface instead of relying on auto-detect.
+          IFACE=$(ip route show default | awk '{print $5; exit}')
+          MON_IP=$(ip -4 -o addr show dev "$IFACE" | awk '{print $4}' | cut -d/ -f1 | head -1)
+          CEPH_PUBLIC_NETWORK=$(ip -4 -o route show dev "$IFACE" scope link | awk '$1 ~ /\// {print $1; exit}')
+          echo "Ceph network: iface=$IFACE mon_ip=$MON_IP public_network=$CEPH_PUBLIC_NETWORK"
+          docker run -d --network host \
+            --name ceph \
+            -e NETWORK_AUTO_DETECT=0 \
+            -e MON_IP="$MON_IP" \
+            -e CEPH_PUBLIC_NETWORK="$CEPH_PUBLIC_NETWORK" \
+            -e RGW_NAME \
+            -e CEPH_DEMO_UID \
+            -e RGW_CIVETWEB_PORT \
+            -e CEPH_DEMO_ACCESS_KEY \
+            -e CEPH_DEMO_SECRET_KEY \
+            owncloudci/ceph:tag-build-master-jewel-ubuntu-16.04
+
+      - name: Wait for Ceph S3 Server
+        if: ${{ inputs.use-ceph-s3 }}
+        run: |
+          timeout 180 bash -c 'until (exec 3<>/dev/tcp/localhost/8080) 2>/dev/null; do sleep 2; done'
+
+      - name: Ceph diagnostics
+        if: ${{ failure() && inputs.use-ceph-s3 }}
+        run: |
+          echo "=== docker ps -a ==="
+          docker ps -a
+          echo "=== host interfaces (ip) ==="
+          ip -brief addr || ip addr
+          echo "=== /proc/net/dev (what NETWORK_AUTO_DETECT ranks) ==="
+          cat /proc/net/dev
+          echo "=== ceph.conf (resolved mon host / public network) ==="
+          docker exec ceph cat /etc/ceph/ceph.conf 2>&1 || echo "no ceph container / exec failed"
+          echo "=== listening ports inside ceph container ==="
+          docker exec ceph ss -tlnp 2>&1 || echo "no ceph container / exec failed"
+          echo "=== ceph container logs ==="
+          docker logs ceph 2>&1 || echo "no ceph container"
+
       - name: Install Core Dependencies
         run: |
           make
@@ -229,8 +291,24 @@ jobs:
           TEST_CONFIG_FILE: ${{ inputs.scality-s3-test-config }}
         run: |
           cp "apps/${APP_NAME}/tests/drone/${TEST_CONFIG_FILE}.config.php" config
+          php occ a:d notifications
           php occ s3:create-bucket owncloud --accept-warning
           for I in $(seq 1 9); do php occ s3:create-bucket owncloud$I --accept-warning; done
+
+      - name: Setup for Ceph S3 Server tests
+        if: ${{ inputs.use-ceph-s3 }}
+        env:
+          APP_NAME: ${{ inputs.app-name }}
+        run: |
+          cp "apps/${APP_NAME}/tests/drone/ceph.config.php" config
+          php occ a:d notifications
+          php occ s3:create-bucket OWNCLOUD --accept-warning
+          for I in $(seq 1 9); do php occ s3:create-bucket OWNCLOUD$I --accept-warning; done
+
+      - name: Display core config
+        run: |
+          ls -l config
+          cat config/config.php
 
       - name: Run PHPUnit
         env:

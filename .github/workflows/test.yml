@@ -57,6 +57,16 @@ jobs:
       app-repository: owncloud/activity
       php-versions: '["8.3"]'
 
+  php-unit-ceph:
+    name: PHP Unit with Ceph S3
+    uses: ./.github/workflows/php-unit.yml
+    with:
+      app-name: files_primary_s3
+      app-repository: owncloud/files_primary_s3
+      php-versions: '["8.3"]'
+      use-ceph-s3: true
+      additional-packages: imagemagick
+
   php-integration:
     name: PHP Integration
     uses: ./.github/workflows/php-unit.yml
