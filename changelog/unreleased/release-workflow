@@ -1,0 +1,10 @@
+Enhancement: Add reusable release workflow for ownCloud Classic apps
+
+A tag push on an app repository now builds, signs and publishes the app tarball
+as a GitHub Release. Signing is delegated to ocsign instead of
+`occ integrity:sign-app`, so no bootstrapped ownCloud server is needed - which
+is why app Makefiles previously skipped signing silently in CI. The workflow
+asserts that every published tarball carries a valid schema v2
+`appinfo/signature.json`, turning that silent skip into a hard failure.
+
+https://github.com/owncloud/reusable-workflows/pull/87

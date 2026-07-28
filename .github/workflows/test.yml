@@ -98,6 +98,46 @@ jobs:
     name: Build dist
     uses: ./.github/workflows/build.yml
 
+  gen-signing-key:
+    name: Generate throwaway signing key
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      key: ${{ steps.gen.outputs.key }}
+      cert: ${{ steps.gen.outputs.cert }}
+    steps:
+      # A self-signed, single-day EC P-384 leaf outside the ownCloud PKI. ocsign
+      # does not validate the chain up to a root, so this is enough to exercise
+      # the real signing path. CN must equal the app id under test.
+      - name: Generate key and certificate
+        id: gen
+        run: |
+          openssl ecparam -name secp384r1 -genkey -noout -out key.pem
+          openssl req -new -x509 -key key.pem -out cert.pem -subj "/CN=activity" -days 1
+          {
+            echo 'key<<EOF_KEY'
+            cat key.pem
+            echo 'EOF_KEY'
+            echo 'cert<<EOF_CERT'
+            cat cert.pem
+            echo 'EOF_CERT'
+          } >> "$GITHUB_OUTPUT"
+
+  release-dry-run:
+    name: Release (dry run)
+    needs: gen-signing-key
+    permissions:
+      contents: write
+    uses: ./.github/workflows/release.yml
+    with:
+      app-name: activity
+      app-repository: owncloud/activity
+      dry-run: true
+    secrets:
+      SIGNING_KEY: ${{ needs.gen-signing-key.outputs.key }}
+      SIGNING_CERT: ${{ needs.gen-signing-key.outputs.cert }}
+
   calens:
     name: Changelog
     uses: ./.github/workflows/calens.yml

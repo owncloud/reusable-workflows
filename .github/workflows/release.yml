@@ -1,0 +1,234 @@
+on:
+  workflow_call:
+    inputs:
+      app-name:
+        description: 'Name of the app (defaults to the repository name)'
+        required: false
+        type: string
+        default: ''
+      app-repository:
+        description: 'Repository of the app (optional, defaults to the current repository)'
+        required: false
+        type: string
+        default: ''
+      environment:
+        description: 'GitHub Environment providing the signing secrets (optional)'
+        required: false
+        type: string
+        default: ''
+      ocsign-ref:
+        description: 'Commit SHA of owncloud/ocsign to build the signing tool from - must be a full commit SHA, never a movable tag'
+        required: false
+        type: string
+        default: '7d83a313e7643ee445544a9625aa50ed6f40ac74' # v0.2.1
+      artifact-glob:
+        description: 'Glob matching the tarball(s) produced by "make dist"'
+        required: false
+        type: string
+        default: 'build/**/*.tar.gz'
+      dry-run:
+        description: 'Skip the tag check and release creation - upload the artifact instead'
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      SIGNING_KEY:
+        description: 'PEM encoded private key matching SIGNING_CERT'
+        required: false
+      SIGNING_CERT:
+        description: 'PEM encoded code signing leaf certificate - its CN must equal the app id'
+        required: false
+      SIGNING_CHAIN:
+        description: 'PEM encoded intermediate certificate chain (optional)'
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    permissions:
+      contents: write
+    concurrency:
+      group: release-${{ github.ref }}
+      cancel-in-progress: false
+
+    steps:
+      - name: Validate app-repository
+        if: ${{ inputs.app-repository != '' }}
+        env:
+          APP_REPO: ${{ inputs.app-repository }}
+        run: |
+          if ! echo "$APP_REPO" | grep -qE '^owncloud/[a-zA-Z0-9._-]+$'; then
+            echo "Error: app-repository must be within the owncloud/ namespace, got: $APP_REPO"
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: ${{ inputs.app-repository }}
+          persist-credentials: false
+
+      # ubuntu-latest ships no xmllint, so appinfo/info.xml is read with python3
+      # (always present) rather than by installing libxml2-utils.
+      - name: Read app metadata
+        id: appinfo
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import xml.etree.ElementTree as ET
+          root = ET.parse("appinfo/info.xml").getroot()
+          for field in ("id", "version"):
+              node = root.find(field)
+              if node is None or not (node.text or "").strip():
+                  raise SystemExit(f"::error::appinfo/info.xml has no <{field}>")
+              print(f"{field}={node.text.strip()}")
+          PY
+
+      - name: Verify tag matches appinfo/info.xml
+        if: ${{ !inputs.dry-run }}
+        env:
+          XML: ${{ steps.appinfo.outputs.version }}
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          if [ "$TAG" != "$XML" ]; then
+            echo "::error::tag version '$TAG' does not match appinfo/info.xml version '$XML'"
+            exit 1
+          fi
+          echo "tag version '$TAG' matches appinfo/info.xml"
+
+      - name: Check signing secrets are present
+        env:
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          SIGNING_CERT: ${{ secrets.SIGNING_CERT }}
+        run: |
+          if [ -z "$SIGNING_KEY" ] || [ -z "$SIGNING_CERT" ]; then
+            echo "::error::SIGNING_KEY and SIGNING_CERT must be provided - either by the environment named in the 'environment' input, or by the calling workflow. Refusing to build an unsigned release."
+            exit 1
+          fi
+
+      # ocsign is checked out into the workspace because actions/checkout refuses
+      # paths outside $GITHUB_WORKSPACE. The source tree is removed again right
+      # after the build so it cannot end up inside a dist tarball - some apps
+      # (e.g. notes) rsync the whole working tree into their source artifact.
+      - name: Checkout ocsign
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: owncloud/ocsign
+          ref: ${{ inputs.ocsign-ref }}
+          path: .ocsign-src
+          persist-credentials: false
+
+      - name: Setup Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: .ocsign-src/go.mod
+          # ocsign is pure stdlib and ships no go.sum, so there is nothing to cache
+          cache: false
+
+      - name: Build ocsign
+        env:
+          CGO_ENABLED: '0'
+        run: |
+          (cd .ocsign-src && go build -trimpath -o "$RUNNER_TEMP/bin/ocsign" ./cmd/ocsign)
+          rm -rf .ocsign-src
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/bin/ocsign" --version
+
+      - name: Write key material
+        env:
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          SIGNING_CERT: ${{ secrets.SIGNING_CERT }}
+          SIGNING_CHAIN: ${{ secrets.SIGNING_CHAIN }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/signing"
+          chmod 700 "$RUNNER_TEMP/signing"
+          umask 077
+          printf '%s\n' "$SIGNING_KEY" > "$RUNNER_TEMP/signing/key.pem"
+          printf '%s\n' "$SIGNING_CERT" > "$RUNNER_TEMP/signing/cert.pem"
+          if [ -n "$SIGNING_CHAIN" ]; then
+            printf '%s\n' "$SIGNING_CHAIN" > "$RUNNER_TEMP/signing/chain.pem"
+          fi
+          chmod 600 "$RUNNER_TEMP/signing"/*.pem
+
+      - name: Build and sign
+        run: |
+          CHAIN_ARG=""
+          if [ -f "$RUNNER_TEMP/signing/chain.pem" ]; then
+            CHAIN_ARG="--chain=$RUNNER_TEMP/signing/chain.pem"
+          fi
+          make dist \
+            CAN_SIGN=true \
+            sign="ocsign --key=$RUNNER_TEMP/signing/key.pem --cert=$RUNNER_TEMP/signing/cert.pem $CHAIN_ARG"
+
+      - name: Remove key material
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/signing"
+
+      - name: Assert artifacts are signed
+        env:
+          ARTIFACT_GLOB: ${{ inputs.artifact-glob }}
+          APP_ID: ${{ steps.appinfo.outputs.id }}
+        run: |
+          echo "app id: $APP_ID"
+
+          shopt -s globstar nullglob
+          # shellcheck disable=SC2206  # intentional glob expansion of the input
+          tarballs=( $ARTIFACT_GLOB )
+          if [ ${#tarballs[@]} -eq 0 ]; then
+            echo "::error::artifact-glob '$ARTIFACT_GLOB' matched no files"
+            exit 1
+          fi
+
+          for tarball in "${tarballs[@]}"; do
+            echo "::group::$tarball"
+            listing=$(tar tzf "$tarball")
+            # `|| true` keeps `set -eo pipefail` from aborting before the
+            # explicit check below can report a useful error.
+            entry=$({ grep -E '(^|/)appinfo/signature\.json$' <<< "$listing" || true; } | sed -n 1p)
+            if [ -z "$entry" ]; then
+              echo "::error::$tarball contains no appinfo/signature.json - the app was built unsigned"
+              exit 1
+            fi
+
+            workdir=$(mktemp -d)
+            tar xzf "$tarball" -C "$workdir" "$entry"
+            sig="$workdir/$entry"
+
+            if ! jq -e '.v == 2 and (.alg | length > 0) and (.signature | length > 0)' "$sig" > /dev/null; then
+              echo "::error::$tarball: signature.json is not a valid schema v2 envelope"
+              cat "$sig"
+              exit 1
+            fi
+
+            subject=$(jq -r '.certificates.leaf' "$sig" | openssl x509 -noout -subject -nameopt multiline | sed -n 's/ *commonName *= *//p')
+            if [ "$subject" != "$APP_ID" ]; then
+              echo "::error::$tarball: embedded leaf certificate CN '$subject' does not match app id '$APP_ID'"
+              exit 1
+            fi
+
+            echo "signed: $entry (alg=$(jq -r '.alg' "$sig"), CN=$subject)"
+            rm -rf "$workdir"
+            echo "::endgroup::"
+          done
+
+      - name: Create GitHub Release
+        if: ${{ !inputs.dry-run }}
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: ${{ inputs.artifact-glob }}
+
+      - name: Upload artifacts
+        if: ${{ inputs.dry-run }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ inputs.app-name || github.event.repository.name }}
+          path: ${{ inputs.artifact-glob }}
+          if-no-files-found: error

@@ -28,6 +28,7 @@ See the `.github/workflows/` directory for available workflow definitions.
 
 ## Documentation
 
+- [Releasing ownCloud Classic apps](docs/release.md) -- `release.yml`, app signing and the required secrets
 - [GitHub Reusable Workflows](https://docs.github.com/en/actions/using-workflows/reusing-workflows)
 
 ## Part of ownCloud Infrastructure
