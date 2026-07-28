@@ -130,3 +130,15 @@ jobs:
       app-repository: owncloud/notifications
       do-api-tests: true
       use-email-server: true
+
+  acceptance-webui-federated:
+    name: WebUI acceptance tests that need a federated server
+    uses: ./.github/workflows/acceptance.yml
+    with:
+      app-name: activity
+      app-repository: owncloud/activity
+      do-webui-tests: true
+      databases: '["mariadb:10.6", "postgres:10.21"]'
+      server-folder: 'server'
+      federated-folder: 'federated'
+      test-suites: "['webUIActivitySharingExternal']"
