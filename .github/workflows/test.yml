@@ -190,5 +190,6 @@ jobs:
       app-name: search_elastic
       app-repository: owncloud/search_elastic
       do-api-tests: true
+      filter-tags: '@smokeTest'
       elasticsearch-version: '7.17'
       test-suites: "['apiSearchElastic']"
