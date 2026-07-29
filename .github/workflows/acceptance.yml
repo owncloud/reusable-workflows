@@ -85,6 +85,11 @@ on:
         required: false
         type: boolean
         default: false
+      elasticsearch-version:
+        description: 'Elasticsearch version to provide for tests - empty means no Elasticsearch'
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -313,6 +318,19 @@ jobs:
             --name email \
             inbucket/inbucket
 
+      # started on the host network so the app finds it under its default
+      # "localhost:9200" setting, with no occ configuration needed
+      - name: Elasticsearch
+        if: ${{ inputs.elasticsearch-version != '' }}
+        env:
+          ES_VERSION: ${{ inputs.elasticsearch-version }}
+        run: |
+          docker run -d --rm --network host \
+            --name elasticsearch \
+            -e ELASTICSEARCH_ROOT_LOG_LEVEL=warn \
+            -e ELASTICSEARCH_BOOTSTRAP_MEMORY_LOCK=false \
+            "owncloudops/elasticsearch:${ES_VERSION}"
+
       - name: Make local core
         run: |
           make
@@ -481,6 +499,14 @@ jobs:
       - name: Install libxml2-utils to get xmllint used by acceptance test script
         run: sudo apt install -y libxml2-utils
 
+      # the first Background step of an Elasticsearch suite already creates the
+      # search index, so wait for shard allocation rather than just an open port
+      - name: Wait for Elasticsearch
+        if: ${{ inputs.elasticsearch-version != '' }}
+        run: |
+          timeout 600 bash -c \
+            'until curl -sf "http://localhost:9200/_cluster/health?wait_for_status=yellow"; do sleep 2; done'
+
       - name: Run API acceptance tests
         if: ${{ inputs.do-api-tests }}
         env:
@@ -564,3 +590,13 @@ jobs:
           sudo cat /var/log/apache2/access.log
           echo "error log"
           sudo cat /var/log/apache2/error.log
+
+      - name: Display Elasticsearch state if tests failed
+        if: failure() && inputs.elasticsearch-version != ''
+        run: |
+          echo "cluster health"
+          curl -s "http://localhost:9200/_cluster/health?pretty" || true
+          echo "indices"
+          curl -s "http://localhost:9200/_cat/indices?v" || true
+          echo "elasticsearch log"
+          docker logs elasticsearch 2>&1 | tail -100 || true

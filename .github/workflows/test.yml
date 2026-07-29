@@ -182,3 +182,13 @@ jobs:
       server-folder: 'server'
       federated-folder: 'federated'
       test-suites: "['webUIActivitySharingExternal']"
+
+  acceptance-api-elasticsearch:
+    name: API acceptance tests with Elasticsearch
+    uses: ./.github/workflows/acceptance.yml
+    with:
+      app-name: search_elastic
+      app-repository: owncloud/search_elastic
+      do-api-tests: true
+      elasticsearch-version: '7.17'
+      test-suites: "['apiSearchElastic']"
