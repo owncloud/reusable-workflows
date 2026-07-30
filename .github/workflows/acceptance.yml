@@ -101,7 +101,9 @@ jobs:
     permissions:
       contents: read
     strategy:
-      fail-fast: true
+      # every suite reports its own verdict - one failing suite should not
+      # cancel the others and hide whether they would have passed
+      fail-fast: false
       matrix:
         php: ${{ fromJSON(inputs.php-versions) }}
         database: ${{ fromJSON(inputs.databases) }}
