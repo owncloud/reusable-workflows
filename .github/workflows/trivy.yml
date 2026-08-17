@@ -26,6 +26,11 @@ on:
         required: false
         type: string
         default: ''
+      node-cache-dependency-path:
+        description: 'Path of the yarn.lock to key the Node.js cache on (empty: no cache; the lockfile lives in different places per repo and setup-node fails when the named file is missing)'
+        required: false
+        type: string
+        default: ''
       scan-path:
         description: 'Unpacked distribution tree to scan (default: autodetected, see the "Resolve scan path" step)'
         required: false
@@ -76,13 +81,16 @@ jobs:
           php-version: ${{ inputs.php-version }}
           extensions: ${{ inputs.php-extensions }}
 
+      # Caching is opt-in per caller: setup-node hard-fails when the lockfile it
+      # is pointed at does not exist, and the app repos that need node keep their
+      # yarn.lock in the repository root while core generates build/yarn.lock.
       - name: Setup Node.js
         if: inputs.node-version != ''
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ inputs.node-version }}
-          cache: 'yarn'
-          cache-dependency-path: build/yarn.lock
+          cache: ${{ inputs.node-cache-dependency-path != '' && 'yarn' || '' }}
+          cache-dependency-path: ${{ inputs.node-cache-dependency-path }}
 
       - name: Enable yarn
         if: inputs.node-version != ''
