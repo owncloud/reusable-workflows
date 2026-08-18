@@ -6,6 +6,11 @@ on:
         required: false
         type: string
         default: ''
+      app-repository:
+        description: 'Repository of the app (optional, defaults to the current repository)'
+        required: false
+        type: string
+        default: ''
       make-target:
         description: 'Make target that produces the distribution tree (core needs "dist-dir")'
         required: false
@@ -68,8 +73,23 @@ jobs:
       contents: read
 
     steps:
+      - name: Validate app-repository
+        if: ${{ inputs.app-repository != '' }}
+        env:
+          APP_REPO: ${{ inputs.app-repository }}
+        run: |
+          if ! echo "$APP_REPO" | grep -qE '^owncloud/[a-zA-Z0-9._-]+$'; then
+            echo "Error: app-repository must be within the owncloud/ namespace, got: $APP_REPO"
+            exit 1
+          fi
+
+      # An empty app-repository checks out the calling repository, which is what
+      # every app caller wants. It is set only by this repo's own CI, which has
+      # no distribution tree of its own to scan.
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ inputs.app-repository }}
 
       # App repos build with the runner's preinstalled PHP, as their other
       # workflows do. Core needs a pinned PHP plus node/yarn, because its
@@ -134,7 +154,7 @@ jobs:
           # Fail loudly: Trivy reports "no vulnerabilities" for a path that does
           # not exist, which would turn a broken build into a green scan.
           if [ -z "${path}" ]; then
-            echo "::error::no distribution tree found - tried: $(echo ${candidates} | tr '\n' ' ')"
+            echo "::error::no distribution tree found - tried: $(printf '%s' "${candidates}" | tr '\n' ' ')"
             echo "set scan-path (or fix make-target). Contents of build/:"
             find build -maxdepth 3 -type d 2>/dev/null || echo "build/ does not exist"
             exit 1

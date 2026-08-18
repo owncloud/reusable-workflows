@@ -98,6 +98,31 @@ jobs:
     name: Build dist
     uses: ./.github/workflows/build.yml
 
+  # Both trivy jobs scan a real app rather than this repository: `make dist` here
+  # produces only a .tar.gz, and Trivy does not look inside archives, so scanning
+  # this repo would pass without ever reading a file.
+  trivy:
+    name: Trivy
+    uses: ./.github/workflows/trivy.yml
+    with:
+      # No app-name on purpose. The app is checked out at the workspace root, so
+      # its Makefile's app_name=$(notdir $(CURDIR)) evaluates to this repository's
+      # name - which is exactly what app-name defaults to. Passing
+      # app-name: activity would look for build/dist/activity and fail.
+      app-repository: owncloud/activity
+
+  trivy-artifacts-layout:
+    name: Trivy (artifacts layout)
+    uses: ./.github/workflows/trivy.yml
+    with:
+      # announcementcenter uses the older build/artifacts/appstore/<app> tree, so
+      # this covers the second candidate of the scan path autodetection.
+      # php-version and node-version only exercise the optional setup steps; this
+      # app's dist target needs neither.
+      app-repository: owncloud/announcementcenter
+      php-version: '8.3'
+      node-version: '18'
+
   gen-signing-key:
     name: Generate throwaway signing key
     runs-on: ubuntu-latest
