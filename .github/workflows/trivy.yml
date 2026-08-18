@@ -1,0 +1,184 @@
+on:
+  workflow_call:
+    inputs:
+      app-name:
+        description: 'Name of the app (used to derive the scan path, defaults to the repository name)'
+        required: false
+        type: string
+        default: ''
+      app-repository:
+        description: 'Repository of the app (optional, defaults to the current repository)'
+        required: false
+        type: string
+        default: ''
+      make-target:
+        description: 'Make target that produces the distribution tree (core needs "dist-dir")'
+        required: false
+        type: string
+        default: 'dist'
+      php-version:
+        description: 'Set up this PHP version before building (empty: use the runner default)'
+        required: false
+        type: string
+        default: ''
+      php-extensions:
+        description: 'PHP extensions to install, only used when php-version is set'
+        required: false
+        type: string
+        default: 'curl, gd, json, xml, zip'
+      node-version:
+        description: 'Set up this Node.js version and enable yarn before building (empty: skip, core needs it for "make dist-dir")'
+        required: false
+        type: string
+        default: ''
+      node-cache-dependency-path:
+        description: 'Path of the yarn.lock to key the Node.js cache on (empty: no cache; the lockfile lives in different places per repo and setup-node fails when the named file is missing)'
+        required: false
+        type: string
+        default: ''
+      scan-path:
+        description: 'Unpacked distribution tree to scan (default: autodetected, see the "Resolve scan path" step)'
+        required: false
+        type: string
+        default: ''
+      severity:
+        description: 'Comma separated severities that fail the scan'
+        required: false
+        type: string
+        default: 'HIGH,CRITICAL'
+      ignore-unfixed:
+        description: 'Ignore vulnerabilities that have no fix available yet'
+        required: false
+        type: boolean
+        default: true
+      skip-files:
+        description: 'Comma separated files to exclude from the scan'
+        required: false
+        type: string
+        default: ''
+      trivyignores:
+        description: 'Comma separated ignore files listing accepted CVEs. Leave empty: Trivy already picks up a .trivyignore in the repository root, and naming one explicitly fails the job when the file does not exist.'
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  trivy:
+    name: Trivy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Validate app-repository
+        if: ${{ inputs.app-repository != '' }}
+        env:
+          APP_REPO: ${{ inputs.app-repository }}
+        run: |
+          if ! echo "$APP_REPO" | grep -qE '^owncloud/[a-zA-Z0-9._-]+$'; then
+            echo "Error: app-repository must be within the owncloud/ namespace, got: $APP_REPO"
+            exit 1
+          fi
+
+      # An empty app-repository checks out the calling repository, which is what
+      # every app caller wants. It is set only by this repo's own CI, which has
+      # no distribution tree of its own to scan.
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ inputs.app-repository }}
+
+      # App repos build with the runner's preinstalled PHP, as their other
+      # workflows do. Core needs a pinned PHP plus node/yarn, because its
+      # dist-dir recipe runs `yarn run clean-modules`.
+      - name: Setup PHP
+        if: inputs.php-version != ''
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2.37.2
+        with:
+          php-version: ${{ inputs.php-version }}
+          extensions: ${{ inputs.php-extensions }}
+
+      # Caching is opt-in per caller: setup-node hard-fails when the lockfile it
+      # is pointed at does not exist, and the app repos that need node keep their
+      # yarn.lock in the repository root while core generates build/yarn.lock.
+      - name: Setup Node.js
+        if: inputs.node-version != ''
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: ${{ inputs.node-cache-dependency-path != '' && 'yarn' || '' }}
+          cache-dependency-path: ${{ inputs.node-cache-dependency-path }}
+
+      - name: Enable yarn
+        if: inputs.node-version != ''
+        run: corepack enable
+
+      - name: Build
+        env:
+          MAKE_TARGET: ${{ inputs.make-target }}
+        run: make "${MAKE_TARGET}"
+
+      # The scan runs against the built distribution tree rather than the checkout
+      # because that is what actually ships: composer/npm dependencies are only
+      # installed by the build, and bundled binaries keep the file mode they are
+      # released with.
+      # The app repos disagree on where `make dist` puts the tree: 29 use
+      # build/dist/<app>, 14 the older build/artifacts/appstore/<app>, and notes
+      # uses build/appstore/<app>. Autodetecting the layout keeps the caller
+      # workflow identical in every repo; anything else passes scan-path.
+      - name: Resolve scan path
+        id: scan
+        env:
+          SCAN_PATH: ${{ inputs.scan-path }}
+          APP_NAME: ${{ inputs.app-name != '' && inputs.app-name || github.event.repository.name }}
+        run: |
+          if [ -n "${SCAN_PATH}" ]; then
+            candidates="${SCAN_PATH}"
+          else
+            candidates="build/dist/${APP_NAME}
+          build/artifacts/appstore/${APP_NAME}
+          build/appstore/${APP_NAME}"
+          fi
+
+          path=""
+          for c in ${candidates}; do
+            if [ -d "${c}" ]; then
+              path="${c}"
+              break
+            fi
+          done
+
+          # Fail loudly: Trivy reports "no vulnerabilities" for a path that does
+          # not exist, which would turn a broken build into a green scan.
+          if [ -z "${path}" ]; then
+            echo "::error::no distribution tree found - tried: $(printf '%s' "${candidates}" | tr '\n' ' ')"
+            echo "set scan-path (or fix make-target). Contents of build/:"
+            find build -maxdepth 3 -type d 2>/dev/null || echo "build/ does not exist"
+            exit 1
+          fi
+
+          echo "scanning ${path}"
+          echo "path=${path}" >> "${GITHUB_OUTPUT}"
+
+      # scan-type must be rootfs, not fs: the fs scanner does not run Trivy's
+      # gobinary analyzer, so bundled Go binaries would go unscanned. Trivy does
+      # not look inside archives either, hence the unpacked tree above.
+      #
+      # trivyignores is deliberately empty by default: the action fails hard on a
+      # named ignore file that does not exist ("ERROR: cannot find ignorefile"),
+      # whereas Trivy itself reads .trivyignore from the working directory when
+      # there is one - so a repository opts in simply by committing the file.
+      - name: Trivy scan
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: rootfs
+          scan-ref: ${{ steps.scan.outputs.path }}
+          hide-progress: true
+          severity: ${{ inputs.severity }}
+          ignore-unfixed: ${{ inputs.ignore-unfixed }}
+          skip-files: ${{ inputs.skip-files }}
+          trivyignores: ${{ inputs.trivyignores }}
+          exit-code: 1

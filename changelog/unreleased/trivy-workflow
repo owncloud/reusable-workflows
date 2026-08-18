@@ -1,0 +1,11 @@
+Enhancement: Add reusable Trivy vulnerability scan workflow
+
+App repositories and core can now scan their built distribution tree for known
+HIGH/CRITICAL vulnerabilities, failing the job when a fix is available. The scan
+runs `trivy rootfs` over the unpacked tree rather than `trivy fs` over the
+checkout: the fs scanner does not enable Trivy's gobinary analyzer, which is how
+a Go 1.22.4 rclone carrying 48 HIGH/CRITICAL CVEs shipped unnoticed inside
+migrate_to_ocis, and Trivy does not look inside the .tar.gz either. A missing
+distribution tree fails the job instead of scanning nothing and reporting clean.
+
+https://github.com/owncloud/reusable-workflows/pull/92
