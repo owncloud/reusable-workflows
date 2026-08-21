@@ -20,7 +20,7 @@ on:
         description: 'Commit SHA of owncloud/ocsign to build the signing tool from - must be a full commit SHA, never a movable tag'
         required: false
         type: string
-        default: '7d83a313e7643ee445544a9625aa50ed6f40ac74' # v0.2.1
+        default: 'ef82a85a69fa371c34e062dad98d10062eaa17ff' # v0.3.0
       artifact-glob:
         description: 'Glob matching the tarball(s) produced by "make dist"'
         required: false

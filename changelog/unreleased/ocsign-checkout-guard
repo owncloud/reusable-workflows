@@ -1,0 +1,11 @@
+Enhancement: Refuse to sign a repository checkout in the release workflow
+
+The release workflow now builds ocsign from v0.3.0, which exits 1 when the tree
+being signed holds a `.git` entry at any depth. Signing a working copy instead of
+the packaged app payload produces a technically valid signature that covers
+tests, CI config and version-control internals as part of the app, and nothing
+downstream can tell it apart from a correct one. The workflow already points
+ocsign at the appstore staging directory, so this is a backstop that fires only
+if an app's Makefile aims signing at the checkout root.
+
+https://github.com/owncloud/reusable-workflows/pull/93
