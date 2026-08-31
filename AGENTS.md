@@ -1,4 +1,4 @@
-# agents.md -- Reusable Workflows
+# AGENTS.md -- Reusable Workflows
 
 ## Repository Overview
 
