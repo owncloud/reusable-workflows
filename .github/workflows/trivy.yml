@@ -109,7 +109,7 @@ jobs:
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ inputs.node-version }}
-          cache: ${{ inputs.node-cache-dependency-path != '' && 'yarn' || '' }}
+          cache: ${{ case(inputs.node-cache-dependency-path != '', 'yarn', '') }}
           cache-dependency-path: ${{ inputs.node-cache-dependency-path }}
 
       - name: Enable yarn
@@ -133,7 +133,7 @@ jobs:
         id: scan
         env:
           SCAN_PATH: ${{ inputs.scan-path }}
-          APP_NAME: ${{ inputs.app-name != '' && inputs.app-name || github.event.repository.name }}
+          APP_NAME: ${{ case(inputs.app-name != '', inputs.app-name, github.event.repository.name) }}
         run: |
           if [ -n "${SCAN_PATH}" ]; then
             candidates="${SCAN_PATH}"
