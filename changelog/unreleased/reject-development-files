@@ -1,0 +1,21 @@
+Bugfix: Reject release artifacts that ship development files
+
+The release workflow now fails when a tarball it is about to publish contains the
+working tree the app was built in - `.git` at any depth, or `.git`, `.github`,
+`tests`, `build` or `vendor-bin` at the app's own top level. The directory names
+are anchored to the top level so a vendored dependency shipping its own `tests/`
+is unaffected.
+
+Release 11.0.0 shipped 13 bundled apps this way: roughly 102 MB of development
+material, 16 git repositories, and `files_antivirus`'s EICAR acceptance data,
+which made anti-virus scans of the release tarball fail. Because the signature
+assertion runs over the same tarball, those files were code-signed too, so an
+administrator could not remove them without breaking `occ integrity:check-app` -
+which is why this has to be caught before the release is published rather than
+cleaned up afterwards.
+
+This complements the ocsign checkout guard: ocsign refuses to sign a staging tree
+holding a `.git` entry, while this inspects the finished tarball and also covers
+`tests`, `build`, `.github` and `vendor-bin`, which ocsign accepts.
+
+https://github.com/owncloud/core/issues/41824

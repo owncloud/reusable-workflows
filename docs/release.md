@@ -82,8 +82,43 @@ caller-passed secrets of the same name.
 - `SIGNING_KEY` and `SIGNING_CERT` are non-empty before `make dist` runs.
 - Every tarball matching `artifact-glob` contains an `appinfo/signature.json`
   that is a valid schema v2 envelope whose embedded leaf `CN` equals the app id.
+- No tarball matching `artifact-glob` carries development files -- see
+  [Development files](#development-files).
 - The glob matched at least one file, and the published release is not empty
   (`fail_on_unmatched_files`).
+
+## Development files
+
+A release artifact must be the app's packaged output, never the working tree it
+was built in. The workflow rejects a tarball that contains:
+
+| rejected | scope |
+|---|---|
+| `.git` | any depth |
+| `.git`, `.github`, `tests`, `build`, `vendor-bin` | the app's own top level |
+
+The directory names are anchored to the app's top level on purpose, so a
+vendored dependency shipping its own `tests/` is unaffected. Only `.git` is
+matched at any depth, because `migrate_to_ocis` 3.0.0 shipped three of them
+under `vendor/`.
+
+If this fails, `artifact-glob` is almost certainly pointing at the build tree or
+at the *source* artifact. Point it at the packaged one -- usually
+`build/artifacts/appstore/<app>.tar.gz` or `build/dist/<app>.tar.gz`.
+
+This check exists because
+[owncloud/core#41824](https://github.com/owncloud/core/issues/41824): ownCloud
+11.0.0 shipped 13 bundled apps as build working trees -- roughly 102 MB of
+development material, 16 git repositories, and `files_antivirus`'s EICAR
+acceptance data, which made anti-virus scans of the release tarball fail. Since
+the signature above covers those files too, an administrator could not delete
+them without breaking `occ integrity:check-app`. That is why this is a hard
+failure at publish time rather than something to clean up afterwards.
+
+It complements, rather than duplicates, the `ocsign` checkout guard: `ocsign`
+refuses to sign a staging tree that holds a `.git` entry, while this inspects the
+finished tarball and also covers `tests`, `build`, `.github` and `vendor-bin`,
+which `ocsign` accepts.
 
 ## Known app Makefile issues
 

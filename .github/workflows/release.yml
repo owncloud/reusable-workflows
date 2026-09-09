@@ -168,7 +168,7 @@ jobs:
         if: always()
         run: rm -rf "$RUNNER_TEMP/signing"
 
-      - name: Assert artifacts are signed
+      - name: Assert artifacts are signed and free of development files
         env:
           ARTIFACT_GLOB: ${{ inputs.artifact-glob }}
           APP_ID: ${{ steps.appinfo.outputs.id }}
@@ -212,6 +212,29 @@ jobs:
 
             echo "signed: $entry (alg=$(jq -r '.alg' "$sig"), CN=$subject)"
             rm -rf "$workdir"
+
+            # A release artifact must be the app's packaged output, never the
+            # working tree it was built in. owncloud/core#41824: v11.0.0 shipped
+            # 13 apps as build trees - ~102 MB of development material, 16 git
+            # repositories, and files_antivirus's EICAR acceptance data, which
+            # made anti-virus scans of the release tarball fail. Because the
+            # signature above covers those files too, an administrator cannot
+            # delete them without breaking `occ integrity:check-app`, so this has
+            # to be caught before the release is published.
+            #
+            # The directory names are anchored to the app's own top level, so a
+            # vendored dependency shipping its own tests/ is not affected; only
+            # .git is rejected at any depth, because migrate_to_ocis 3.0.0
+            # shipped three of them under vendor/.
+            dev=$({ grep -E '^[^/]+/(\.git|\.github|tests|build|vendor-bin)/|(^|/)\.git/' <<< "$listing" || true; })
+            if [ -n "$dev" ]; then
+              echo "::error::$tarball ships development files - point artifact-glob at the packaged artifact (e.g. build/artifacts/appstore/<app>.tar.gz), not at the build tree"
+              printf '%s\n' "$dev" | head -20
+              echo "  ... $(printf '%s\n' "$dev" | wc -l) matching entries in total"
+              exit 1
+            fi
+
+            echo "clean: no development files"
             echo "::endgroup::"
           done
 
