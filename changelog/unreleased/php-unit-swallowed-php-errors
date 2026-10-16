@@ -1,0 +1,11 @@
+Enhancement: Fail PHP Unit when core's error handler swallowed PHP errors
+
+An app's test bootstrap that loads lib/base.php without defining PHPUNIT_RUN gets
+core's production OC\Log\ErrorHandler. PHPUnit's own handler then backs off, and
+every notice, warning and deprecation raised during the suite was written to
+owncloud.log while the job stayed green. The workflow now fails when the PHPUnit
+or integration steps added entries logged with app "PHP" to owncloud.log. Only
+that handler writes such entries.
+
+https://github.com/owncloud/core/issues/41904
+https://github.com/owncloud/reusable-workflows/pull/101

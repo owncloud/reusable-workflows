@@ -311,6 +311,10 @@ jobs:
           ls -l config
           cat config/config.php
 
+      - name: Mark owncloud.log before the tests
+        run: |
+          echo "OC_LOG_MARK=$(stat -c %s data/owncloud.log 2>/dev/null || echo 0)" >> "$GITHUB_ENV"
+
       - name: Run PHPUnit
         env:
           APP_NAME: ${{ inputs.app-name }}
@@ -325,6 +329,26 @@ jobs:
         run: |
           cd "apps/${APP_NAME}"
           make test-php-integration
+
+      # Core's OC\Log\ErrorHandler logs every entry with app "PHP". Inside PHPUnit it is active
+      # when the test bootstrap loaded lib/base.php without defining PHPUNIT_RUN, and then PHPUnit's
+      # own handler backs off, so notices, warnings and deprecations never fail the suite. A PHP
+      # subprocess started by a test (e.g. occ) installs it too.
+      - name: Check for PHP errors swallowed by core's error handler
+        if: ${{ !cancelled() && env.OC_LOG_MARK != '' }}
+        run: |
+          log=data/owncloud.log
+          [ -f "$log" ] || exit 0
+          mark="$OC_LOG_MARK"
+          if [ "$(stat -c %s "$log")" -lt "$mark" ]; then
+            mark=0
+          fi
+          entries=$(tail -c +"$((mark + 1))" "$log" | jq -R -c 'fromjson? | select(.app == "PHP")')
+          if [ -n "$entries" ]; then
+            printf '%s\n' "$entries" | head -n 20
+            echo "::error::$(printf '%s\n' "$entries" | wc -l) PHP error(s) went to owncloud.log instead of failing PHPUnit. Usually the test bootstrap loads lib/base.php without defining PHPUNIT_RUN: define it first, or bootstrap through core's tests/bootstrap.php. A PHP subprocess started by a test (e.g. occ) logs the same way. See https://github.com/owncloud/core/issues/41904"
+            exit 1
+          fi
 
       - name: Tail log
         if: always()
