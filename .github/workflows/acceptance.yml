@@ -112,7 +112,7 @@ jobs:
     services:
       mysql:
         image: >- # zizmor: ignore[unpinned-images] tags come from the caller's databases input, or the fixed mariadb:10.6 fallback
-          ${{ case(startsWith(matrix.database,'mysql:') || startsWith(matrix.database,'mariadb:'), matrix.database, inputs.federated-folder != '', '"mariadb:10.6', '') }}
+          ${{ case(startsWith(matrix.database,'mysql:') || startsWith(matrix.database,'mariadb:'), matrix.database, inputs.federated-folder != '', 'mariadb:10.6', '') }}
         env:
           MYSQL_ROOT_PASSWORD: password
           MYSQL_DATABASE: owncloud
