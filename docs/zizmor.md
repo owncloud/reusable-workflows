@@ -27,9 +27,11 @@ on:
 permissions:
   contents: read
 
+# Grouped per event, so a push to the default branch can never cancel or
+# displace the weekly run; only pull request runs cancel superseded ones.
 concurrency:
-  group: zizmor-${{ github.ref }}
-  cancel-in-progress: true
+  group: zizmor-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   zizmor:
