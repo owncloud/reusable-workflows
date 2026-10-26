@@ -9,4 +9,4 @@ GitHub App tokens request only the permissions they use, setup-php version
 comments match the upstream tag, and local reusable workflows are called with
 the self-repository `$/` syntax.
 
-https://github.com/owncloud/reusable-workflows/pull/PR
+https://github.com/owncloud/reusable-workflows/pull/104
