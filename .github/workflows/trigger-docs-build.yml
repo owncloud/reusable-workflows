@@ -21,6 +21,7 @@ jobs:
           private-key: ${{ secrets.DOCS_TRIGGER_APP_PRIVATE_KEY }}
           owner: owncloud
           repositories: docs
+          permission-actions: write
 
       - name: Trigger docs rebuild
         run: |

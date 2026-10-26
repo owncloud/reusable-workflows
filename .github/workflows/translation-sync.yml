@@ -92,6 +92,7 @@ jobs:
           NO_INSTALL: "true"
           SUB_PATH: ${{ inputs.sub_path }}
           PACKAGE_MANAGER: ${{ inputs.package_manager }}
+        # zizmor: ignore[adhoc-packages] the pnpm version is pinned by the app's package.json
         run: |
           cd "$SUB_PATH"
           if [ "$PACKAGE_MANAGER" = 'pnpm' ]; then
@@ -190,6 +191,8 @@ jobs:
         with:
           client-id: ${{ secrets.TRANSLATION_APP_ID }}
           private-key: ${{ secrets.TRANSLATION_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
 
       - name: Create or update translations PR
         if: github.ref == format('refs/heads/{0}', inputs.branch)
