@@ -1,0 +1,12 @@
+Enhancement: Add reusable zizmor workflow audit
+
+Repositories can now audit their GitHub Actions workflows, composite actions
+and Dependabot config with zizmor. Any finding fails the job, as an annotation
+on the offending line. The org default config lets owncloud/* references stay
+ref-pinned and requires a commit SHA for everything else. This repository's own
+workflows were fixed to pass the audit: checkouts no longer persist credentials,
+GitHub App tokens request only the permissions they use, setup-php version
+comments match the upstream tag, and local reusable workflows are called with
+the self-repository `$/` syntax.
+
+https://github.com/owncloud/reusable-workflows/pull/PR

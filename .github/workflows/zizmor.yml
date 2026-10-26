@@ -1,0 +1,62 @@
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  zizmor:
+    name: Zizmor
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # zizmor reads zizmor.yml or .github/zizmor.yml from the repository when
+      # there is one. A repository config replaces the org default below rather
+      # than merging with it, so it has to repeat the unpinned-uses policies.
+      # Prefer an inline `# zizmor: ignore[<audit>] <reason>` on the offending
+      # line over a repository config for one-off suppressions.
+      #
+      # The org default: zizmor hash-pins every `uses:` since v1.20, which would
+      # flag every `owncloud/reusable-workflows/...@main` caller. Our own
+      # workflows and actions may stay ref-pinned; everything else is SHA-pinned,
+      # as the org allowlist (sha_pinning_required) demands anyway.
+      - name: Resolve config
+        id: config
+        run: |
+          if [ -f zizmor.yml ] || [ -f .github/zizmor.yml ]; then
+            echo "using the repository's zizmor config"
+            exit 0
+          fi
+
+          config="${RUNNER_TEMP}/zizmor.yml"
+          cat > "${config}" <<'EOF'
+          rules:
+            unpinned-uses:
+              config:
+                policies:
+                  owncloud/*: ref-pin
+                  "*": hash-pin
+          EOF
+          echo "using the org default zizmor config"
+          echo "path=${config}" >> "${GITHUB_OUTPUT}"
+
+      # advanced-security is off on purpose: SARIF mode needs
+      # security-events: write and reports to the Security tab instead of
+      # failing the job. Annotations mode exits non-zero on any finding, needs
+      # only contents: read and therefore also works on pull requests from forks.
+      # Online audits (impostor commits, known-vulnerable actions) use the
+      # read-only github.token.
+      - name: Run zizmor
+        uses: zizmorcore/zizmor-action@85b2b9fb8e3325e7a23d7d0a9d7ba5ae0f999e3e # v0.7.1
+        with:
+          version: 1.31.1
+          advanced-security: false
+          annotations: true
+          config: ${{ steps.config.outputs.path }}

@@ -94,6 +94,10 @@ jobs:
       php-version: '8.3'
       enable-xvfb-display-server: true
 
+  zizmor:
+    name: Zizmor
+    uses: $/.github/workflows/zizmor.yml
+
   build-dist:
     name: Build dist
     uses: $/.github/workflows/build.yml
