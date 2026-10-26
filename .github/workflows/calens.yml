@@ -51,6 +51,8 @@ jobs:
         with:
           client-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
 
       - name: Create or update changelog PR
         if: github.ref == format('refs/heads/{0}', inputs.branch)

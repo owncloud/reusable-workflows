@@ -29,6 +29,7 @@ See the `.github/workflows/` directory for available workflow definitions.
 ## Documentation
 
 - [Releasing ownCloud Classic apps](docs/release.md) -- `release.yml`, app signing and the required secrets
+- [Auditing workflows with zizmor](docs/zizmor.md) -- `zizmor.yml`, the org default config and suppressing findings
 - [GitHub Reusable Workflows](https://docs.github.com/en/actions/using-workflows/reusing-workflows)
 
 ## Part of ownCloud Infrastructure

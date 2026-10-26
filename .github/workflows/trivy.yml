@@ -90,13 +90,14 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ${{ inputs.app-repository }}
+          persist-credentials: false
 
       # App repos build with the runner's preinstalled PHP, as their other
       # workflows do. Core needs a pinned PHP plus node/yarn, because its
       # dist-dir recipe runs `yarn run clean-modules`.
       - name: Setup PHP
         if: inputs.php-version != ''
-        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2.40.0
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
           php-version: ${{ inputs.php-version }}
           extensions: ${{ inputs.php-extensions }}

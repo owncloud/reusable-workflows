@@ -92,6 +92,7 @@ jobs:
           NO_INSTALL: "true"
           SUB_PATH: ${{ inputs.sub_path }}
           PACKAGE_MANAGER: ${{ inputs.package_manager }}
+        # zizmor: ignore[adhoc-packages] the pnpm version is pinned by the app's package.json
         run: |
           cd "$SUB_PATH"
           if [ "$PACKAGE_MANAGER" = 'pnpm' ]; then
@@ -184,12 +185,18 @@ jobs:
           find . -name "yo.*" -type f -print0 | xargs -r -0 rm -f
           find . -name "ne.*" -type f -print0 | xargs -r -0 rm -f
 
+      # Requesting team reviewers needs organization Members: read on top. The
+      # action skips an empty permission input, so callers without
+      # team_reviewers do not ask for it.
       - name: Generate GitHub App token
         id: app-token
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
           client-id: ${{ secrets.TRANSLATION_APP_ID }}
           private-key: ${{ secrets.TRANSLATION_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+          permission-members: ${{ case(inputs.team_reviewers != '', 'read', '') }}
 
       - name: Create or update translations PR
         if: github.ref == format('refs/heads/{0}', inputs.branch)

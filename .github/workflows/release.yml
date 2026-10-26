@@ -238,7 +238,7 @@ jobs:
             echo "::endgroup::"
           done
 
-      - name: Create GitHub Release
+      - name: Create GitHub Release # zizmor: ignore[superfluous-actions] the publish path only runs on a real release, CI cannot exercise a rewrite
         if: ${{ !inputs.dry-run }}
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:

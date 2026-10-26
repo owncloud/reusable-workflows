@@ -21,11 +21,11 @@ jobs:
 
   semantic-git-messages:
     name: Commits
-    uses: ./.github/workflows/semantic-git-message.yml
+    uses: $/.github/workflows/semantic-git-message.yml
 
   php-code-style:
     name: PHP Code Style
-    uses: ./.github/workflows/php-codestyle.yml
+    uses: $/.github/workflows/php-codestyle.yml
     with:
       app-name: activity
       app-repository: owncloud/activity
@@ -33,7 +33,7 @@ jobs:
 
   php-code-style-no-phan:
     name: PHP Code Style (--no-phan)
-    uses: ./.github/workflows/php-codestyle.yml
+    uses: $/.github/workflows/php-codestyle.yml
     with:
       app-name: activity
       app-repository: owncloud/activity
@@ -42,7 +42,7 @@ jobs:
 
   php-code-style-additional-app:
     name: PHP Code Style (+additional app)
-    uses: ./.github/workflows/php-codestyle.yml
+    uses: $/.github/workflows/php-codestyle.yml
     with:
       app-name: activity
       app-repository: owncloud/activity
@@ -51,7 +51,7 @@ jobs:
 
   php-unit:
     name: PHP Unit
-    uses: ./.github/workflows/php-unit.yml
+    uses: $/.github/workflows/php-unit.yml
     with:
       app-name: activity
       app-repository: owncloud/activity
@@ -59,7 +59,7 @@ jobs:
 
   php-unit-ceph:
     name: PHP Unit with Ceph S3
-    uses: ./.github/workflows/php-unit.yml
+    uses: $/.github/workflows/php-unit.yml
     with:
       app-name: files_primary_s3
       app-repository: owncloud/files_primary_s3
@@ -69,7 +69,7 @@ jobs:
 
   php-integration:
     name: PHP Integration
-    uses: ./.github/workflows/php-unit.yml
+    uses: $/.github/workflows/php-unit.yml
     with:
       app-name: notes
       app-repository: owncloud/notes
@@ -78,7 +78,7 @@ jobs:
 
   js-unit:
     name: JS Unit
-    uses: ./.github/workflows/js-unit.yml
+    uses: $/.github/workflows/js-unit.yml
     with:
       app-name: customgroups
       app-repository: owncloud/customgroups
@@ -87,23 +87,27 @@ jobs:
 
   js-unit-xvfb-display:
     name: JS Unit with Xvfb Display Server
-    uses: ./.github/workflows/js-unit.yml
+    uses: $/.github/workflows/js-unit.yml
     with:
       app-name: calendar
       app-repository: owncloud/calendar
       php-version: '8.3'
       enable-xvfb-display-server: true
 
+  zizmor:
+    name: Zizmor
+    uses: $/.github/workflows/zizmor.yml
+
   build-dist:
     name: Build dist
-    uses: ./.github/workflows/build.yml
+    uses: $/.github/workflows/build.yml
 
   # Both trivy jobs scan a real app rather than this repository: `make dist` here
   # produces only a .tar.gz, and Trivy does not look inside archives, so scanning
   # this repo would pass without ever reading a file.
   trivy:
     name: Trivy
-    uses: ./.github/workflows/trivy.yml
+    uses: $/.github/workflows/trivy.yml
     with:
       # No app-name on purpose. The app is checked out at the workspace root, so
       # its Makefile's app_name=$(notdir $(CURDIR)) evaluates to this repository's
@@ -113,7 +117,7 @@ jobs:
 
   trivy-artifacts-layout:
     name: Trivy (artifacts layout)
-    uses: ./.github/workflows/trivy.yml
+    uses: $/.github/workflows/trivy.yml
     with:
       # announcementcenter uses the older build/artifacts/appstore/<app> tree, so
       # this covers the second candidate of the scan path autodetection.
@@ -154,7 +158,7 @@ jobs:
     needs: gen-signing-key
     permissions:
       contents: write
-    uses: ./.github/workflows/release.yml
+    uses: $/.github/workflows/release.yml
     with:
       app-name: activity
       app-repository: owncloud/activity
@@ -165,14 +169,14 @@ jobs:
 
   calens:
     name: Changelog
-    uses: ./.github/workflows/calens.yml
+    uses: $/.github/workflows/calens.yml
     secrets:
       APP_ID: ${{ secrets.CALENS_APP_ID }}
       APP_PRIVATE_KEY: ${{ secrets.CALENS_APP_PRIVATE_KEY }}
 
   acceptance-api:
     name: API acceptance tests
-    uses: ./.github/workflows/acceptance.yml
+    uses: $/.github/workflows/acceptance.yml
     with:
       app-name: activity
       app-repository: owncloud/activity
@@ -180,7 +184,7 @@ jobs:
 
   acceptance-webui:
     name: WebUI acceptance tests
-    uses: ./.github/workflows/acceptance.yml
+    uses: $/.github/workflows/acceptance.yml
     with:
       app-name: activity
       app-repository: owncloud/activity
@@ -189,7 +193,7 @@ jobs:
 
   acceptance-api-email:
     name: API acceptance tests with Email Server
-    uses: ./.github/workflows/acceptance.yml
+    uses: $/.github/workflows/acceptance.yml
     with:
       app-name: notifications
       app-repository: owncloud/notifications
@@ -198,7 +202,7 @@ jobs:
 
   acceptance-webui-federated:
     name: WebUI acceptance tests that need a federated server
-    uses: ./.github/workflows/acceptance.yml
+    uses: $/.github/workflows/acceptance.yml
     with:
       app-name: activity
       app-repository: owncloud/activity
@@ -210,7 +214,7 @@ jobs:
 
   acceptance-api-elasticsearch:
     name: API acceptance tests with Elasticsearch
-    uses: ./.github/workflows/acceptance.yml
+    uses: $/.github/workflows/acceptance.yml
     with:
       app-name: search_elastic
       app-repository: owncloud/search_elastic
