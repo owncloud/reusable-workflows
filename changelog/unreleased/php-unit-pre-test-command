@@ -1,11 +1,11 @@
 Enhancement: Add a pre-test-command input to the PHP Unit workflow
 
 Apps whose unit tests talk to external services had no way to start them, so
-they could not use the reusable PHP Unit workflow. files_antivirus needs a dummy
-clamd and an ICAP ClamAV server, which Drone used to provide, and its unit tests
-had stopped running in CI when Drone was shut down. The new pre-test-command input runs
-a shell command in the app directory after the app is enabled and before
-PHPUnit.
+they could not use the reusable PHP Unit workflow. files_antivirus needs a
+dummy clamd and an ICAP ClamAV server, which Drone used to provide, and its
+unit tests stopped running in CI when Drone was shut down. The new
+pre-test-command input runs a shell command in the app directory after the app
+is enabled and before PHPUnit.
 
 https://github.com/owncloud/files_antivirus/pull/586
-https://github.com/owncloud/reusable-workflows/pull/PR
+https://github.com/owncloud/reusable-workflows/pull/106
