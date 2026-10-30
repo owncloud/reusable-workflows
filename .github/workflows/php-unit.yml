@@ -64,6 +64,11 @@ on:
         required: false
         type: boolean
         default: false
+      pre-test-command:
+        description: 'Shell command run in apps/<app-name> under bash -euo pipefail, after the app is enabled and before PHPUnit, e.g. to start services the tests need. Background processes keep running for the test steps. The command must wait until its services are ready and print their logs if they fail.'
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -308,6 +313,15 @@ jobs:
           php occ a:d notifications
           php occ s3:create-bucket OWNCLOUD --accept-warning
           for I in $(seq 1 9); do php occ s3:create-bucket OWNCLOUD$I --accept-warning; done
+
+      - name: Run pre-test command
+        if: ${{ inputs.pre-test-command != '' }}
+        env:
+          APP_NAME: ${{ inputs.app-name }}
+          PRE_TEST_COMMAND: ${{ inputs.pre-test-command }}
+        run: |
+          cd "apps/${APP_NAME}"
+          bash -euo pipefail -c "$PRE_TEST_COMMAND"
 
       - name: Display core config
         run: |
