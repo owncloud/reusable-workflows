@@ -10,6 +10,11 @@ on:
         required: false
         type: string
         default: master
+      pr_branch:
+        description: 'Branch the translations PR is opened from; give each call its own when a repo runs this workflow more than once'
+        required: false
+        type: string
+        default: chore/translations-update
       sub_path:
         description: 'Path within the repo where translation files live (e.g. l10n or .)'
         required: false
@@ -203,7 +208,7 @@ jobs:
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
           token: ${{ steps.app-token.outputs.token }}
-          branch: chore/translations-update
+          branch: ${{ inputs.pr_branch }}
           commit-message: "chore: update translations from transifex"
           title: "chore: update translations from transifex"
           body: "Automated translation update from Transifex. This pull request is updated on each sync run — merging it will close it and a fresh one will be opened on the next change."
